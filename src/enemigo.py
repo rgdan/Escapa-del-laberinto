@@ -1,6 +1,6 @@
 class Enemigo:
     def __init__(self, posicion):
-        self.posicion = posicion
+        super().__init__(posicion)
 
     def mover(self,modo, pos_jugador):
         if modo == "Escapa":

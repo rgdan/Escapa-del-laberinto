@@ -1,7 +1,9 @@
-class Jugador:
+from entidad import Entidad
+
+class Jugador(Entidad):
     def __init__(self, nombre , posicion):
         self.nombre = nombre
-        self.posicion = posicion
+        super().__init__(posicion)
         self.energia = 100
         self.trampas = []
         self.max_trampas = 3
