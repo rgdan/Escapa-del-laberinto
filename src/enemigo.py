@@ -1,4 +1,6 @@
-class Enemigo:
+from entidad import Entidad
+
+class Enemigo(Entidad):
     def __init__(self, posicion):
         super().__init__(posicion)
 
