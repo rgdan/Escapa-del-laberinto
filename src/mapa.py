@@ -149,14 +149,13 @@ class GeneradorMapa:
         Marca celdas como CAMINO o TUNEL, evitando tocar el borde excepto en la salida.
         """
         pila = [origen]
-        visitados = set()
-        fila_origen, columna_origen = origen
-        
+        visitados = [] 
+
         while pila:
             fila, columna = pila.pop()
             if (fila, columna) in visitados:
                 continue
-            visitados.add((fila, columna))
+            visitados.append((fila, columna))
 
             # el inicio siempre es camino
             if (fila, columna) == origen:
@@ -221,9 +220,12 @@ class GeneradorMapa:
 
         # 3) elegir y abrir salidas
         self._elegir_salidas()
-
-        # 4) tallar camino garantizado al menos a la primera salida
+        # asegurar que exista una salida principal antes de usarla
+        if not self.salidas:
+            self._elegir_salidas()
         salida_principal = self.salidas[0]
+
+       
         tallado_exitoso = self._tallar_camino_aleatorio_dfs(self.inicio, salida_principal)
         
         # si no talló correctamente, conectar ignorando tipos
@@ -248,7 +250,7 @@ class GeneradorMapa:
 
         return self.matriz, self.inicio, self.salidas
 
-"""
+""""
 # ----------------- Ejemplo de uso -----------------
 if __name__ == "__main__":
     # Configura a tu gusto:
@@ -259,4 +261,4 @@ if __name__ == "__main__":
     print("Salidas:", salidas)
     for fila in mapa:
         print(fila)
-        """
+"""
