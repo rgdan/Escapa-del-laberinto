@@ -109,20 +109,21 @@ class MainMenu:
 
 
 class GameWindow:
-    def __init__(self, mapa, title="Modo Juego", width=1200, height=800, cell_size=32):
+    def __init__(self, mapa, title, width, height, cell_size):
         """
         mapa: lista de listas (matriz) con símbolos como '.' y '#'
         cell_size: tamaño de cada celda en píxeles
         """
         pygame.init()
         self.mapa = mapa
+        self.title = title
         self.rows = len(mapa)
-        self.cols = len(mapa[0]) if self.rows > 0 else 0
+        self.cols = len(mapa[0]) 
 
         self.width = width
         self.height = height
         self.cell_size = cell_size
-        self.margin = 2  # margen entre celdas para ver rejilla
+        
 
         self.screen = pygame.display.set_mode((width, height))
         pygame.display.set_caption(title)
@@ -130,31 +131,40 @@ class GameWindow:
         self.running = True
 
         # Paleta
-        self.COLOR_BG = (40, 40, 40)
-        self.COLOR_GRID = (25, 25, 25)
-        self.COLOR_CAMINO = (200, 200, 200)
-        self.COLOR_MURO = (60, 60, 60)
+        self.color_bg = (34, 139, 34)      # verde
+        self.color_grid = (0, 0, 0)        #negro
+        self.color_camino = (101, 67, 33) # marrón
+        self.color_muro= (128, 128, 128)   # gris
+        self.color_tunel = (255, 165, 0)   # naranja
+        self.color_liana = (34, 139, 34)   # verde
 
         # Calcular área de dibujo y centrar
-        self.grid_w = self.cols * (self.cell_size + self.margin) - self.margin
-        self.grid_h = self.rows * (self.cell_size + self.margin) - self.margin
-        self.offset_x = max(0, (self.width - self.grid_w) // 2)
+        self.grid_w = self.cols * (self.cell_size ) 
+        self.grid_h = self.rows * (self.cell_size ) 
         self.offset_y = max(0, (self.height - self.grid_h) // 2)
+        self.offset_x = max(0, (self.width - self.grid_w) // 2)
 
     def draw_grid(self):
-        self.screen.fill(self.COLOR_BG)
-        for y in range(self.rows):
-            for x in range(self.cols):
-                celda = self.mapa[y][x]
-                color = self.COLOR_CAMINO if celda == '.' else self.COLOR_MURO
+        self.screen.fill(self.color_bg)
+        for x in range(self.rows):
+            for y in range(self.cols):
+                celda = self.mapa[x][y]
+                if celda == 0:
+                    color = self.color_camino
+                elif celda == 1:
+                    color = self.color_muro
+                elif celda == 2:
+                    color = self.color_liana
+                elif celda == 3:
+                    color = self.color_tunel
                 rect = pygame.Rect(
-                    self.offset_x + x * (self.cell_size + self.margin),
-                    self.offset_y + y * (self.cell_size + self.margin),
+                    self.offset_x + y * (self.cell_size ),
+                    self.offset_y + x * (self.cell_size ),
                     self.cell_size,
                     self.cell_size
                 )
                 pygame.draw.rect(self.screen, color, rect)
-                pygame.draw.rect(self.screen, self.COLOR_GRID, rect, 1)
+                pygame.draw.rect(self.screen, self.color_grid, rect, 1)
         pygame.display.flip()
 
     def loop(self):

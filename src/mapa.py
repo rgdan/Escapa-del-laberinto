@@ -14,9 +14,10 @@ class GeneradorMapa:
         self.inicio = (1,1)
         self.numero_salidas = 1
         self.conectar_todas_salidas = False
-        self.probabilidad_tunel_en_camino = 0.35
-        self.prob_camino, self.prob_muro, self.prob_liana, self.prob_tunel = (0.35, 0.35, 0.35, 0.15)
+        self.probabilidad_tunel_en_camino = 0.10
+        self.prob_camino, self.prob_muro, self.prob_liana, self.prob_tunel = (0.45, 0.20, 0.25, 0.10)
         self.excluir_salidas_esquinas = True
+        self.porcentaje_conversion_camino = 0.30
 
         # matriz inicial: todo muro
         self.matriz = [[MURO for _ in range(self.columnas)] for _ in range(self.filas)]
@@ -63,6 +64,13 @@ class GeneradorMapa:
         # abrir las salidas como CAMINO
         for (fila_salida, columna_salida) in self.salidas:
             self.matriz[fila_salida][columna_salida] = CAMINO
+            # asegurar que haya al menos un camino adyacente interior a la salida
+            for vecino_x, vecino_y in self.obtener_vecinos_4_direcciones(fila_salida, columna_salida):
+                # el vecino debe ser interior (no borde)
+                es_borde_vecino = (vecino_x in (0, self.filas-1)) or (vecino_y in (0, self.columnas-1))
+                if not es_borde_vecino:
+                    self.matriz[vecino_x][vecino_y] = CAMINO
+                    break  # solo necesitamos asegurar un vecino como camino
 
     def buscar_camino(self, origen, destino, tipos_permitidos):
         
@@ -180,7 +188,7 @@ class GeneradorMapa:
         total = sum(probs)
         if total <= 0:
             # valores por defecto si la suma es 0 o negativa
-            p_muro, p_camino, p_liana, p_tunel = 0.35, 0.35, 0.15, 0.15
+            p_muro, p_camino, p_liana, p_tunel = 0.40, 0.15, 0.25, 0.20
         else:
             p_muro, p_camino, p_liana, p_tunel = (p / total for p in probs)
 
@@ -188,6 +196,14 @@ class GeneradorMapa:
         umbral_camino = umbral_muro + p_camino
         umbral_liana = umbral_camino + p_liana
         # umbral_tunel implícito: resto hasta 1.0
+
+        # recolectar vecinos interiores de salidas para protegerlos
+        vecinos_salidas = set()
+        for sx, sy in self.salidas:
+            for vx, vy in self.obtener_vecinos_4_direcciones(sx, sy):
+                es_borde_v = (vx in (0, self.filas-1)) or (vy in (0, self.columnas-1))
+                if not es_borde_v:
+                    vecinos_salidas.add((vx, vy))
 
         for fila in range(self.filas):
             for columna in range(self.columnas):
@@ -197,8 +213,8 @@ class GeneradorMapa:
                     self.matriz[fila][columna] = MURO
                     continue
 
-                # no tocar inicio, salidas ni celdas ya talladas como CAMINO/TUNEL
-                if (fila, columna) == self.inicio or (fila, columna) in self.salidas or self.matriz[fila][columna] in (CAMINO, TUNEL):
+                # no tocar inicio, salidas, vecinos de salidas ni celdas ya talladas como CAMINO/TUNEL
+                if (fila, columna) == self.inicio or (fila, columna) in self.salidas or (fila, columna) in vecinos_salidas or self.matriz[fila][columna] in (CAMINO, TUNEL):
                     continue
 
                 # asignar tipo aleatorio según probabilidades normalizadas
@@ -211,6 +227,67 @@ class GeneradorMapa:
                     self.matriz[fila][columna] = LIANA
                 else:
                     self.matriz[fila][columna] = TUNEL
+
+        # convertir algunos CAMINO en obstáculos (lianas/túneles/muros) sin romper conectividad
+        self._convertir_caminos_a_obstaculos()
+
+    def _convertir_caminos_a_obstaculos(self):
+        """Convierte un porcentaje de CAMINO en lianas, túneles o muros, evitando inicio y salidas."""
+        
+        # recolectar vecinos interiores de salidas para no convertirlos
+        vecinos_salidas = set()
+        for sx, sy in self.salidas:
+            for vx, vy in self.obtener_vecinos_4_direcciones(sx, sy):
+                es_borde_v = (vx in (0, self.filas-1)) or (vy in (0, self.columnas-1))
+                if not es_borde_v:
+                    vecinos_salidas.add((vx, vy))
+        
+        candidatos = []
+        for x in range(self.filas):
+            for y in range(self.columnas):
+                # excluir inicio, salidas y vecinos inmediatos de salidas
+                if self.matriz[x][y] == CAMINO and (x, y) != self.inicio and (x, y) not in self.salidas and (x, y) not in vecinos_salidas:
+                    candidatos.append((x, y))
+
+        # barajar y tomar porcentaje para convertir
+        random.shuffle(candidatos)
+        num_convertir = int(len(candidatos) * self.porcentaje_conversion_camino)
+        a_convertir = candidatos[:num_convertir]
+
+        # distribuir conversiones entre LIANA, TUNEL, MURO (33% cada uno aprox)
+        tipos_obstaculo = [LIANA, TUNEL, MURO]
+        convertidos = 0
+        for x, y in a_convertir:
+            # verificar si esta celda es crítica para conectividad
+            # contar vecinos transitables (CAMINO o TUNEL)
+            vecinos_transitables = 0
+            for nx, ny in self.obtener_vecinos_4_direcciones(x, y):
+                if self.matriz[nx][ny] in (CAMINO, TUNEL):
+                    vecinos_transitables += 1
+            
+            # solo convertir si tiene más de 2 vecinos transitables (no es cuello de botella)
+            # o si al convertir no se rompe la conexión a la salida
+            if vecinos_transitables > 2:
+                tipo_nuevo = random.choice(tipos_obstaculo)
+                valor_original = self.matriz[x][y]
+                self.matriz[x][y] = tipo_nuevo
+                
+                # verificar que sigue existiendo camino a la(s) salida(s)
+                camino_valido = True
+                for salida in self.salidas:
+                    if self.buscar_camino(self.inicio, salida, {CAMINO, TUNEL}) is None:
+                        camino_valido = False
+                        break
+                
+                if camino_valido:
+                    convertidos += 1
+                else:
+                    # revertir conversión si rompió la conectividad
+                    self.matriz[x][y] = valor_original
+            
+            # limitar conversiones para mantener jugabilidad
+            if convertidos >= num_convertir:
+                break
 
     # ----------------- API principal -----------------
     def generar(self):
@@ -249,9 +326,25 @@ class GeneradorMapa:
         if self.buscar_camino(self.inicio, salida_principal, {CAMINO, TUNEL}) is None:
             self.conectar_ignorando_tipos(self.inicio, salida_principal)
 
+        # 8) validación final: asegurar que cada salida tenga al menos un vecino CAMINO
+        for sx, sy in self.salidas:
+            tiene_vecino_camino = False
+            for vx, vy in self.obtener_vecinos_4_direcciones(sx, sy):
+                es_borde_v = (vx in (0, self.filas-1)) or (vy in (0, self.columnas-1))
+                if not es_borde_v and self.matriz[vx][vy] == CAMINO:
+                    tiene_vecino_camino = True
+                    break
+            # si no tiene vecino CAMINO, forzar el primer vecino interior como CAMINO
+            if not tiene_vecino_camino:
+                for vx, vy in self.obtener_vecinos_4_direcciones(sx, sy):
+                    es_borde_v = (vx in (0, self.filas-1)) or (vy in (0, self.columnas-1))
+                    if not es_borde_v:
+                        self.matriz[vx][vy] = CAMINO
+                        break
+
         return self.matriz
 
-"""
+
 # ----------------- Ejemplo de uso -----------------
 if __name__ == "__main__":
     # Configura a tu gusto:
@@ -261,4 +354,3 @@ if __name__ == "__main__":
     for fila in mapa:
         print(fila)
 
-"""

@@ -22,12 +22,12 @@ def main():
         # check user input
         if selected == 'modo_escapa': 
             print("Modo Escapa ")
-            game = GameWindow(mapa, title="Modo Escapa", width=1200, height=800, cell_size=24)
+            game = GameWindow(mapa, "Modo Escapa", 1200, 800, 40)
             game.loop()
 
         elif selected == 'modo_cazador':
             print("Modo Cazador")
-            game = GameWindow(mapa, title="Modo Cazador", width=1200, height=800, cell_size=24)
+            game = GameWindow(mapa, "Modo Cazador", 1200, 800, 40)
             game.loop()
 
             
