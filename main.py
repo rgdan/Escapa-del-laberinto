@@ -1,6 +1,8 @@
-from src.interfaz import MainMenu
+from src.interfaz import  MainMenu
+from src.mapa import GeneradorMapa
 import pygame
 import sys
+
 
 # handle main menu logic
 #input: none
@@ -11,10 +13,22 @@ def main():
         menu = MainMenu(1200, 800)
         selected = menu.run()
         
+
+        generador = GeneradorMapa()
+        mapa = generador.generar()
+        
+        #TODO: dibujar cuadriculas del mapa, por ahora solo se imprime la matriz
+
         # check user input
-        if selected == 'modo_escapa': print(" Modo Escapa")
+        if selected == 'modo_escapa': 
+            print(" Modo Escapa")
+            for fila in mapa:
+                print(fila)
             
-        elif selected == 'modo_cazador': print("Modo Cazador")
+        elif selected == 'modo_cazador': 
+            print("Modo Cazador")
+            for fila in mapa:
+                print(fila)
             
         elif selected == 'leaderboard': print("Leaderboard")
             
