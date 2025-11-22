@@ -160,6 +160,9 @@ class GeneradorMapa:
             # el inicio siempre es camino
             if (fila, columna) == origen:
                 self.matriz[fila][columna] = CAMINO
+            elif (fila, columna) == destino:
+                # asegurar que la salida sea siempre CAMINO (nunca TUNEL)
+                self.matriz[fila][columna] = CAMINO
             else:
                 # decidir aleatoriamente si es túnel o camino
                 self.matriz[fila][columna] = TUNEL if random.random() < self.probabilidad_tunel_en_camino else CAMINO
@@ -250,7 +253,7 @@ class GeneradorMapa:
 
         return self.matriz, self.inicio, self.salidas
 
-""""
+"""
 # ----------------- Ejemplo de uso -----------------
 if __name__ == "__main__":
     # Configura a tu gusto:
