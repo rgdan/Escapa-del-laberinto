@@ -1,6 +1,7 @@
 import pygame
 import sys
 
+
 # class for making button
 
 class Button:
@@ -104,3 +105,16 @@ class MainMenu:
             if self.selected_option and self.selected_option != 'salir': return self.selected_option
                 
         return self.selected_option
+    
+
+'''
+class GameWindow():
+    def __init__(self, width, height):
+        pygame.init()
+        self.width = width
+        self.height = height
+        self.screen = pygame.display.set_mode((width, height))
+        pygame.display.set_caption("Modo x")
+        self.clock = pygame.time.Clock()
+'''
+        
