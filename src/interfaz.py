@@ -107,14 +107,67 @@ class MainMenu:
         return self.selected_option
     
 
-'''
-class GameWindow():
-    def __init__(self, width, height):
+
+class GameWindow:
+    def __init__(self, mapa, title="Modo Juego", width=1200, height=800, cell_size=32):
+        """
+        mapa: lista de listas (matriz) con símbolos como '.' y '#'
+        cell_size: tamaño de cada celda en píxeles
+        """
         pygame.init()
+        self.mapa = mapa
+        self.rows = len(mapa)
+        self.cols = len(mapa[0]) if self.rows > 0 else 0
+
         self.width = width
         self.height = height
+        self.cell_size = cell_size
+        self.margin = 2  # margen entre celdas para ver rejilla
+
         self.screen = pygame.display.set_mode((width, height))
-        pygame.display.set_caption("Modo x")
+        pygame.display.set_caption(title)
         self.clock = pygame.time.Clock()
-'''
-        
+        self.running = True
+
+        # Paleta
+        self.COLOR_BG = (40, 40, 40)
+        self.COLOR_GRID = (25, 25, 25)
+        self.COLOR_CAMINO = (200, 200, 200)
+        self.COLOR_MURO = (60, 60, 60)
+
+        # Calcular área de dibujo y centrar
+        self.grid_w = self.cols * (self.cell_size + self.margin) - self.margin
+        self.grid_h = self.rows * (self.cell_size + self.margin) - self.margin
+        self.offset_x = max(0, (self.width - self.grid_w) // 2)
+        self.offset_y = max(0, (self.height - self.grid_h) // 2)
+
+    def draw_grid(self):
+        self.screen.fill(self.COLOR_BG)
+        for y in range(self.rows):
+            for x in range(self.cols):
+                celda = self.mapa[y][x]
+                color = self.COLOR_CAMINO if celda == '.' else self.COLOR_MURO
+                rect = pygame.Rect(
+                    self.offset_x + x * (self.cell_size + self.margin),
+                    self.offset_y + y * (self.cell_size + self.margin),
+                    self.cell_size,
+                    self.cell_size
+                )
+                pygame.draw.rect(self.screen, color, rect)
+                pygame.draw.rect(self.screen, self.COLOR_GRID, rect, 1)
+        pygame.display.flip()
+
+    def loop(self):
+        """
+        Corre la ventana de juego hasta que:
+        - se presione ESC
+        - se cierre la ventana
+        """
+        while self.running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+                elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    self.running = False
+
+            self.draw_grid()
