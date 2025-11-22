@@ -1,0 +1,86 @@
+\documentclass[11pt,letterpaper]{article}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Document preamble (Try not to change it too much or it might break the document)
+
+\usepackage{multirow} % Merges multiple table rows into one.
+\usepackage[table,xcdraw]{xcolor} % Adds color to text, tables, and table borders.
+\usepackage{amsmath} % Helps with writing fancy math equations.
+\usepackage{wasysym} % Add Emojis
+\usepackage{amsfonts} %  Gives more math font options, like bold blackboard letters.
+\usepackage{amssymb} % Adds extra math symbols.
+\usepackage{ulem} %  Lets you underline, strike through, or wave underline text.
+\usepackage{lipsum} % Fills your document with fake text (Lorem Ipsum).
+\usepackage{graphicx} %  Lets you add and edit images.
+\usepackage[utf8]{inputenc} % Makes sure special characters (like accents) display correctly.
+\usepackage[hidelinks,bookmarks=false]{hyperref} % Adds clickable links but hides the colored borders.
+\usepackage{float} % Gives better control over where figures and tables appear.
+\usepackage{fancyhdr} % Lets you customize headers and footers.
+\usepackage{enumitem} % Lets you customize lists (like bullet points or numbered lists).
+
+\usepackage[spanish,es-tabla,es-lcroman]{babel}
+\selectlanguage{spanish}
+
+
+\usepackage{listings} % Formats and highlights programming code.
+\lstset{
+    language=Python,
+    frame=lines,
+    breaklines=true,
+}
+
+
+\lstdefinelanguage{pseudocode}{
+    keywords={si, mientras, retornar, mod},
+    sensitive=false,
+    morecomment=[l]{//},
+    morestring=[b]"
+}
+
+\usepackage{geometry}
+ \geometry{
+  left=25mm,
+  top=30mm
+ }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%% Variables for document (Will be used for title page, header & footer.) %%%%
+
+\def \curso{IC-1802 Introducción a la programación}
+\def \semestre{II Semestre 2025}
+
+
+\begin{document}
+
+%%% Header & Footer stuff (Don't change anything, everything is already defined within the variables above.) %%%
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\curso}
+\lhead{ITCR $\vert$ \unidad}
+\rfoot{Pág. \thepage}
+\lfoot{\semestre}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\textbf{\Large Estudiantes: }
+
+\vspace{0.5cm}
+
+Daniel Ramos Guerrero \& Gabriel Murillo López
+
+\vspace{0.5cm} % Adds space below the title
+
+\section{Atributo de Análisis de Problema}
+
+\lipsum[1]
+
+\vspace{0.5cm} % Adds space below the title
+
+\section{Atributo de Herramientas de Ingeniería}
+
+\lipsum[1]
+
+\end{document}
