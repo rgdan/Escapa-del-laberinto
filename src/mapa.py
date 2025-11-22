@@ -23,15 +23,15 @@ class GeneradorMapa:
         self.salidas = []
 
     # ----------------- utilidades internas -----------------
-    def obtener_vecinos_4_direcciones(self, fila, columna):
-        
+    def _obtener_vecinos_4_direcciones(self, fila, columna):
+        """Retorna los 4 vecinos adyacentes (arriba, abajo, izquierda, derecha)."""
         for delta_fila, delta_columna in ((1,0), (-1,0), (0,1), (0,-1)):
             nueva_fila, nueva_columna = fila + delta_fila, columna + delta_columna
             if 0 <= nueva_fila < self.filas and 0 <= nueva_columna < self.columnas:
                 yield nueva_fila, nueva_columna
 
-    def obtener_coordenadas_borde(self):
-        
+    def _obtener_coordenadas_borde(self):
+        """Retorna todas las coordenadas del borde del mapa."""
         coordenadas = []
         # superior e inferior (excluye esquinas si se pide)
         for columna in range(self.columnas):
@@ -54,9 +54,9 @@ class GeneradorMapa:
                 ya_vistas.append(coord)
         return coordenadas_unicas
 
-    def elegir_salidas(self):
-
-        borde = self.obtener_coordenadas_borde()
+    def _elegir_salidas(self):
+        """Selecciona aleatoriamente las posiciones de las salidas en el borde."""
+        borde = self._obtener_coordenadas_borde()
         random.shuffle(borde)
         elegidas = borde[:self.numero_salidas] if len(borde) >= self.numero_salidas else borde
         self.salidas = elegidas
@@ -64,8 +64,12 @@ class GeneradorMapa:
         for (fila_salida, columna_salida) in self.salidas:
             self.matriz[fila_salida][columna_salida] = CAMINO
 
-    def buscar_camino(self, origen, destino, tipos_permitidos):
-        
+    def _buscar_camino_bfs(self, origen, destino, tipos_permitidos):
+        """
+        Búsqueda en anchura (BFS) para encontrar un camino entre origen y destino.
+        Retorna la lista de coordenadas del camino o None si no existe.
+        Implementación sin diccionarios: usa matrices para padres y visitados.
+        """
         # matriz de visitados y padres (None = sin padre)
         visitados = [[False for _ in range(self.columnas)] for _ in range(self.filas)]
         padres = [[None for _ in range(self.columnas)] for _ in range(self.filas)]
@@ -91,15 +95,17 @@ class GeneradorMapa:
                 camino.reverse()
                 return camino
 
-            for nueva_fila, nueva_columna in self.obtener_vecinos_4_direcciones(fila, columna):
+            for nueva_fila, nueva_columna in self._obtener_vecinos_4_direcciones(fila, columna):
                 if not visitados[nueva_fila][nueva_columna] and self.matriz[nueva_fila][nueva_columna] in tipos_permitidos:
                     visitados[nueva_fila][nueva_columna] = True
                     padres[nueva_fila][nueva_columna] = (fila, columna)
                     cola.append((nueva_fila, nueva_columna))
         return None
 
-    def conectar_ignorando_tipos(self, origen, destino):
-        
+    def _conectar_ignorando_tipos(self, origen, destino):
+        """
+        Encuentra un camino ignorando los tipos de celda y lo marca como CAMINO.
+        """
         # matriz de visitados y padres
         visitados = [[False for _ in range(self.columnas)] for _ in range(self.filas)]
         padres = [[None for _ in range(self.columnas)] for _ in range(self.filas)]
@@ -119,7 +125,7 @@ class GeneradorMapa:
                 encontrado = True
                 break
 
-            for nueva_fila, nueva_columna in self.obtener_vecinos_4_direcciones(fila, columna):
+            for nueva_fila, nueva_columna in self._obtener_vecinos_4_direcciones(fila, columna):
                 if not visitados[nueva_fila][nueva_columna]:
                     visitados[nueva_fila][nueva_columna] = True
                     padres[nueva_fila][nueva_columna] = (fila, columna)
@@ -137,8 +143,11 @@ class GeneradorMapa:
             pr = padres[fila][columna]
             actual = pr
 
-    def tallar_camino_aleatorio(self, origen, destino):
-
+    def _tallar_camino_aleatorio_dfs(self, origen, destino):
+        """
+        Intenta tallar un camino aleatorio usando búsqueda en profundidad (DFS).
+        Marca celdas como CAMINO o TUNEL, evitando tocar el borde excepto en la salida.
+        """
         pila = [origen]
         visitados = [] 
 
@@ -161,7 +170,7 @@ class GeneradorMapa:
             if (fila, columna) == destino:
                 return True
 
-            vecinos = list(self.obtener_vecinos_4_direcciones(fila, columna))
+            vecinos = list(self._obtener_vecinos_4_direcciones(fila, columna))
             random.shuffle(vecinos)
             
             for nueva_fila, nueva_columna in vecinos:
@@ -173,22 +182,11 @@ class GeneradorMapa:
                     pila.append((nueva_fila, nueva_columna))
         return False
 
-    def rellenar_mapa_aleatorio(self):
-        
-        # normalizar probabilidades para evitar que sumas != 1 hagan inalcanzable alguna opción
-        probs = [self.prob_muro, self.prob_camino, self.prob_liana, self.prob_tunel]
-        total = sum(probs)
-        if total <= 0:
-            # valores por defecto si la suma es 0 o negativa
-            p_muro, p_camino, p_liana, p_tunel = 0.35, 0.35, 0.15, 0.15
-        else:
-            p_muro, p_camino, p_liana, p_tunel = (p / total for p in probs)
-
-        umbral_muro = p_muro
-        umbral_camino = umbral_muro + p_camino
-        umbral_liana = umbral_camino + p_liana
-        # umbral_tunel implícito: resto hasta 1.0
-
+    def _rellenar_mapa_aleatorio(self):
+        """
+        Rellena el resto del mapa con tipos de celda aleatorios según las probabilidades.
+        No modifica bordes, inicio, salidas ni caminos ya tallados.
+        """
         for fila in range(self.filas):
             for columna in range(self.columnas):
                 # el borde siempre es muro, salvo las salidas
@@ -196,60 +194,64 @@ class GeneradorMapa:
                 if es_borde and (fila, columna) not in self.salidas:
                     self.matriz[fila][columna] = MURO
                     continue
-
+                
                 # no tocar inicio, salidas ni celdas ya talladas como CAMINO/TUNEL
                 if (fila, columna) == self.inicio or (fila, columna) in self.salidas or self.matriz[fila][columna] in (CAMINO, TUNEL):
                     continue
-
-                # asignar tipo aleatorio según probabilidades normalizadas
+                
+                # asignar tipo aleatorio según probabilidades
                 valor_aleatorio = random.random()
-                if valor_aleatorio < umbral_muro:
+                if valor_aleatorio < self.prob_muro:
                     self.matriz[fila][columna] = MURO
-                elif valor_aleatorio < umbral_camino:
+                elif valor_aleatorio < self.prob_muro + self.prob_camino:
                     self.matriz[fila][columna] = CAMINO
-                elif valor_aleatorio < umbral_liana:
+                elif valor_aleatorio < self.prob_muro + self.prob_camino + self.prob_liana:
                     self.matriz[fila][columna] = LIANA
                 else:
                     self.matriz[fila][columna] = TUNEL
 
     # ----------------- API principal -----------------
     def generar(self):
-        
+        """
+        Genera el mapa completo y garantiza conexión al menos a una salida.
+        Retorna: (matriz, inicio, salidas)
+        """
         # 1) limpiar todo a MURO
         for fila in range(self.filas):
             for columna in range(self.columnas):
                 self.matriz[fila][columna] = MURO
 
         # 3) elegir y abrir salidas
-        self.elegir_salidas()
+        self._elegir_salidas()
         # asegurar que exista una salida principal antes de usarla
         if not self.salidas:
-            self.elegir_salidas()
+            self._elegir_salidas()
         salida_principal = self.salidas[0]
 
        
-        tallado_exitoso = self.tallar_camino_aleatorio(self.inicio, salida_principal)
+        tallado_exitoso = self._tallar_camino_aleatorio_dfs(self.inicio, salida_principal)
         
         # si no talló correctamente, conectar ignorando tipos
-        if not tallado_exitoso or self.buscar_camino(self.inicio, salida_principal, {CAMINO, TUNEL}) is None:
-            self.conectar_ignorando_tipos(self.inicio, salida_principal)
+        if not tallado_exitoso or self._buscar_camino_bfs(self.inicio, salida_principal, {CAMINO, TUNEL}) is None:
+            self._conectar_ignorando_tipos(self.inicio, salida_principal)
 
         # 5) opcional: conectar a todas las salidas restantes
         if self.conectar_todas_salidas and len(self.salidas) > 1:
             for salida_extra in self.salidas[1:]:
-                if self.buscar_camino(self.inicio, salida_extra, {CAMINO, TUNEL}) is None:
+                if self._buscar_camino_bfs(self.inicio, salida_extra, {CAMINO, TUNEL}) is None:
                     # intentar tallar camino aleatorio primero
-                    tallado_ok = self.tallar_camino_aleatorio(self.inicio, salida_extra)
-                    if not tallado_ok or self.buscar_camino(self.inicio, salida_extra, {CAMINO, TUNEL}) is None:
-                        self.conectar_ignorando_tipos(self.inicio, salida_extra)
+                    tallado_ok = self._tallar_camino_aleatorio_dfs(self.inicio, salida_extra)
+                    if not tallado_ok or self._buscar_camino_bfs(self.inicio, salida_extra, {CAMINO, TUNEL}) is None:
+                        self._conectar_ignorando_tipos(self.inicio, salida_extra)
+
         # 6) rellenar el resto del mapa con mezcla aleatoria
-        self.rellenar_mapa_aleatorio()
+        self._rellenar_mapa_aleatorio()
 
         # 7) validación final de la salida principal
-        if self.buscar_camino(self.inicio, salida_principal, {CAMINO, TUNEL}) is None:
-            self.conectar_ignorando_tipos(self.inicio, salida_principal)
+        if self._buscar_camino_bfs(self.inicio, salida_principal, {CAMINO, TUNEL}) is None:
+            self._conectar_ignorando_tipos(self.inicio, salida_principal)
 
-        return self.matriz
+        return self.matriz, self.inicio, self.salidas
 
 """
 # ----------------- Ejemplo de uso -----------------
@@ -257,8 +259,9 @@ if __name__ == "__main__":
     # Configura a tu gusto:
     
     generador = GeneradorMapa()
-    mapa = generador.generar()
+    mapa, inicio, salidas = generador.generar()
+    print("Inicio:", inicio)
+    print("Salidas:", salidas)
     for fila in mapa:
         print(fila)
-
 """
