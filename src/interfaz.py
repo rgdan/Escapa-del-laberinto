@@ -515,6 +515,9 @@ class GameWindow:
 
         self.energy_icon = pygame.image.load("sprites/energy/energy.png")
         self.energy_icon = pygame.transform.scale(self.energy_icon, (30, 30))
+        
+        pygame.mixer.init()
+        self.sprint_sound = pygame.mixer.Sound("sounds/sprint.mp3")
 
         self.color_bg = (34, 139, 34)
         self.color_grid = (0, 0, 0)
@@ -531,6 +534,7 @@ class GameWindow:
         
         self.move_cooldown = 0
         self.move_delay = 0.45
+        self.sprint_sound_played = False
 
 
     #E: None
@@ -580,7 +584,11 @@ class GameWindow:
         sprint_text = self.font.render(f"x {self.player.sprints}", True, self.color_text)
         self.screen.blit(sprint_text, (ui_x + 40, ui_y))
         
-        if self.player.sprints < self.player.max_sprints:
+        if self.player.sprint_active:
+            time_remaining = self.player.sprint_duration - self.player.sprint_timer
+            boost_text = self.font.render(f"BOOST: {time_remaining:.1f}s", True, (255, 255, 0))
+            self.screen.blit(boost_text, (ui_x + 120, ui_y))
+        elif self.player.sprints < self.player.max_sprints:
             recharge_progress = self.player.time_since_sprint_used / self.player.sprint_recharge_time
             bar_width = 100
             bar_height = 10
@@ -599,7 +607,14 @@ class GameWindow:
         
         keys = pygame.key.get_pressed()
         
+        was_sprinting = self.player.sprint_active
         self.player.update(dt, keys)
+        
+        if self.player.sprint_active and not was_sprinting:
+            self.sprint_sound.play()
+            self.sprint_sound_played = True
+        elif not self.player.sprint_active:
+            self.sprint_sound_played = False
         
         player_row, player_col = self.player.posicion
         moved = False
@@ -618,8 +633,8 @@ class GameWindow:
             moved = self.player.try_move(player_row, player_col + 1, self.mapa)
         
         if moved:
-            if self.player.is_sprinting:
-                self.move_cooldown = self.move_delay / 2
+            if self.player.sprint_active:
+                self.move_cooldown = self.move_delay / 3
             else:
                 self.move_cooldown = self.move_delay
 

@@ -14,9 +14,9 @@ class Jugador(Entidad):
         self.sprint_recharge_time = 5.0
         self.time_since_sprint_used = 0
         
-        self.is_sprinting = False
-        self.sprint_speed = 2
-        self.normal_speed = 1
+        self.sprint_active = False
+        self.sprint_duration = 1.0
+        self.sprint_timer = 0.0
         
         self.direction = 'down'
         self.is_moving = False
@@ -52,10 +52,18 @@ class Jugador(Entidad):
     #S: None
     def update(self, dt, keys):
         self.is_moving = False
-        self.is_sprinting = False
         
-        if keys[pygame.K_LSHIFT] and self.sprints > 0:
-            self.is_sprinting = True
+        if keys[pygame.K_LSHIFT] and self.sprints > 0 and not self.sprint_active:
+            self.sprint_active = True
+            self.sprint_timer = 0.0
+            self.sprints -= 1
+            self.time_since_sprint_used = 0
+        
+        if self.sprint_active:
+            self.sprint_timer += dt
+            if self.sprint_timer >= self.sprint_duration:
+                self.sprint_active = False
+                self.sprint_timer = 0.0
         
         if self.is_moving:
             self.animation_timer += dt
@@ -66,7 +74,7 @@ class Jugador(Entidad):
             self.animation_frame = 0
             self.animation_timer = 0
         
-        if not self.is_sprinting:
+        if not self.sprint_active:
             self.time_since_sprint_used += dt
             if self.time_since_sprint_used >= self.sprint_recharge_time:
                 if self.sprints < self.max_sprints:
@@ -84,10 +92,6 @@ class Jugador(Entidad):
         
         self.posicion = (nueva_fila, nueva_col)
         self.is_moving = True
-        
-        if self.is_sprinting:
-            self.sprints -= 1
-            self.time_since_sprint_used = 0
         
         return True
     
