@@ -23,15 +23,11 @@ def main():
             registration = PlayerRegistration(1200, 800)
             current_player = registration.run()
             
-            if not current_player:
-                # Usuario canceló el registro
-                continue
+            if not current_player: continue
             
-            # Generar mapa
             generador = GeneradorMapa()
-            mapa = generador.generar()
+            mapa, inicio = generador.generar()
             
-            # Determinar título según el modo
             if selected == 'modo_escapa':
                 title = "Modo Escapa"
                 print(f"Modo Escapa - Jugador: {current_player}")
@@ -39,7 +35,7 @@ def main():
                 title = "Modo Cazador"
                 print(f"Modo Cazador - Jugador: {current_player}")
             
-            game = GameWindow(mapa, title, 1200, 800, 40)
+            game = GameWindow(mapa, title, 1200, 800, 40, current_player, inicio)
             game.loop()
             
             # TODO: Cuando el juego termine, agregar puntuación

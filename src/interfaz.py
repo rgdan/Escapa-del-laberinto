@@ -1,5 +1,6 @@
 import pygame
 import sys
+from src.jugador import Jugador
 
 # class for text input field
 
@@ -349,11 +350,9 @@ class Leaderboard:
 # class for the game window
 
 class GameWindow:
-    def __init__(self, mapa, title, width, height, cell_size):
-        """
-        mapa: lista de listas (matriz) con símbolos como '.' y '#'
-        cell_size: tamaño de cada celda en píxeles
-        """
+    #E: mapa (list), title (str), width (int), height (int), cell_size (int), player_name (str), inicio (tuple)
+    #S: GameWindow instance
+    def __init__(self, mapa, title, width, height, cell_size, player_name, inicio):
         pygame.init()
         self.mapa = mapa
         self.title = title
@@ -364,34 +363,43 @@ class GameWindow:
         self.height = height
         self.cell_size = cell_size
         
-
         self.screen = pygame.display.set_mode((width, height))
         pygame.display.set_caption(title)
         self.clock = pygame.time.Clock()
         self.running = True
 
-        # Cargar texturas
         self.texture_camino = pygame.image.load("sprites/background/camino.png")
         self.texture_muro = pygame.image.load("sprites/background/muro.png")
         self.texture_tunel = pygame.image.load("sprites/background/tunel.png")
         self.texture_lianas = pygame.image.load("sprites/background/lianas.png")
         
-        # Escalar texturas al tamaño de celda
         self.texture_camino = pygame.transform.scale(self.texture_camino, (self.cell_size, self.cell_size))
         self.texture_muro = pygame.transform.scale(self.texture_muro, (self.cell_size, self.cell_size))
         self.texture_tunel = pygame.transform.scale(self.texture_tunel, (self.cell_size, self.cell_size))
         self.texture_lianas = pygame.transform.scale(self.texture_lianas, (self.cell_size, self.cell_size))
 
-        # Paleta (backup colors)
-        self.color_bg = (34, 139, 34)      # verde
-        self.color_grid = (0, 0, 0)        #negro
+        self.energy_icon = pygame.image.load("sprites/energy/energy.png")
+        self.energy_icon = pygame.transform.scale(self.energy_icon, (30, 30))
 
-        # Calcular área de dibujo y centrar
-        self.grid_w = self.cols * (self.cell_size ) 
-        self.grid_h = self.rows * (self.cell_size ) 
+        self.color_bg = (34, 139, 34)
+        self.color_grid = (0, 0, 0)
+        self.color_text = (255, 255, 255)
+
+        self.grid_w = self.cols * self.cell_size
+        self.grid_h = self.rows * self.cell_size
         self.offset_y = max(0, (self.height - self.grid_h) // 2)
         self.offset_x = max(0, (self.width - self.grid_w) // 2)
+        
+        self.player = Jugador(player_name, inicio, cell_size)
+        
+        self.font = pygame.font.Font(None, 36)
+        
+        self.move_cooldown = 0
+        self.move_delay = 0.45
 
+
+    #E: None
+    #S: None
     def draw_grid(self):
         self.screen.fill(self.color_bg)
         for x in range(self.rows):
@@ -411,16 +419,88 @@ class GameWindow:
                 
                 self.screen.blit(texture, (pos_x, pos_y))
                 
-                # Draw grid border
                 rect = pygame.Rect(pos_x, pos_y, self.cell_size, self.cell_size)
                 pygame.draw.rect(self.screen, self.color_grid, rect, 1)
-        pygame.display.flip()
+    
+    #E: None
+    #S: None
+    def draw_player(self):
+        player_row, player_col = self.player.posicion
+        pos_x = self.offset_x + player_col * self.cell_size
+        pos_y = self.offset_y + player_row * self.cell_size
+        
+        sprite = self.player.get_current_sprite()
+        self.screen.blit(sprite, (pos_x, pos_y))
+    
+    #E: None
+    #S: None
+    def draw_ui(self):
+        ui_x = 10
+        ui_y = 10
+        
+        self.screen.blit(self.energy_icon, (ui_x, ui_y))
+        
+        sprint_text = self.font.render(f"x {self.player.sprints}", True, self.color_text)
+        self.screen.blit(sprint_text, (ui_x + 40, ui_y))
+        
+        if self.player.sprints < self.player.max_sprints:
+            recharge_progress = self.player.time_since_sprint_used / self.player.sprint_recharge_time
+            bar_width = 100
+            bar_height = 10
+            bar_x = ui_x + 120
+            bar_y = ui_y + 10
+            
+            pygame.draw.rect(self.screen, (100, 100, 100), (bar_x, bar_y, bar_width, bar_height))
+            pygame.draw.rect(self.screen, (0, 255, 0), (bar_x, bar_y, int(bar_width * recharge_progress), bar_height))
+    
+    #E: dt (float)
+    #S: None
+    def handle_movement(self, dt):
+        if self.move_cooldown > 0:
+            self.move_cooldown -= dt
+            return
+        
+        keys = pygame.key.get_pressed()
+        
+        self.player.update(dt, keys)
+        
+        player_row, player_col = self.player.posicion
+        moved = False
+        
+        if keys[pygame.K_w] or keys[pygame.K_UP]:
+            self.player.direction = 'up'
+            moved = self.player.try_move(player_row - 1, player_col, self.mapa)
+        elif keys[pygame.K_s] or keys[pygame.K_DOWN]:
+            self.player.direction = 'down'
+            moved = self.player.try_move(player_row + 1, player_col, self.mapa)
+        elif keys[pygame.K_a] or keys[pygame.K_LEFT]:
+            self.player.direction = 'left'
+            moved = self.player.try_move(player_row, player_col - 1, self.mapa)
+        elif keys[pygame.K_d] or keys[pygame.K_RIGHT]:
+            self.player.direction = 'right'
+            moved = self.player.try_move(player_row, player_col + 1, self.mapa)
+        
+        if moved:
+            if self.player.is_sprinting:
+                self.move_cooldown = self.move_delay / 2
+            else:
+                self.move_cooldown = self.move_delay
 
-    # run game untill window is closed or ESC is pressed
+    #E: None
+    #S: None
     def loop(self):
         while self.running:
+            dt = self.clock.tick(60) / 1000.0
+            
             for event in pygame.event.get():
-                if event.type == pygame.QUIT: self.running = False
-                elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE: self.running = False
-
+                if event.type == pygame.QUIT:
+                    self.running = False
+                elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    self.running = False
+            
+            self.handle_movement(dt)
+            
             self.draw_grid()
+            self.draw_player()
+            self.draw_ui()
+            pygame.display.flip()

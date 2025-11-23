@@ -342,8 +342,7 @@ class GeneradorMapa:
                         self.matriz[vx][vy] = CAMINO
                         break
 
-        return self.matriz
-
+        return self.matriz, self.inicio
 
 # ----------------- Ejemplo de uso -----------------
 if __name__ == "__main__":
