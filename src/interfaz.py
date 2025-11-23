@@ -485,9 +485,9 @@ class HowToPlay:
 # class for the game window
 
 class GameWindow:
-    #E: mapa (list), title (str), width (int), height (int), cell_size (int), player_name (str), inicio (tuple)
+    #E: mapa (list), title (str), width (int), height (int), cell_size (int), player_name (str), inicio (tuple), modo (str), salidas (list of tuples)
     #S: GameWindow instance
-    def __init__(self, mapa, title, width, height, cell_size, player_name, inicio):
+    def __init__(self, mapa, title, width, height, cell_size, player_name, inicio, modo, salidas):
         pygame.init()
         self.mapa = mapa
         self.title = title
@@ -498,10 +498,14 @@ class GameWindow:
         self.height = height
         self.cell_size = cell_size
         
+        self.modo = modo
+        self.salidas = salidas
+        
         self.screen = pygame.display.set_mode((width, height))
         pygame.display.set_caption(title)
         self.clock = pygame.time.Clock()
         self.running = True
+        self.game_won = False
 
         self.texture_camino = pygame.image.load("sprites/background/camino.png")
         self.texture_muro = pygame.image.load("sprites/background/muro.png")
@@ -518,6 +522,7 @@ class GameWindow:
         
         pygame.mixer.init()
         self.sprint_sound = pygame.mixer.Sound("sounds/sprint.mp3")
+        self.victory_sound = pygame.mixer.Sound("sounds/victory.mp3")
 
         self.color_bg = (34, 139, 34)
         self.color_grid = (0, 0, 0)
@@ -598,6 +603,34 @@ class GameWindow:
             pygame.draw.rect(self.screen, (100, 100, 100), (bar_x, bar_y, bar_width, bar_height))
             pygame.draw.rect(self.screen, (0, 255, 0), (bar_x, bar_y, int(bar_width * recharge_progress), bar_height))
     
+    #E: None
+    #S: None
+    def draw_win_message(self):
+        overlay = pygame.Surface((self.width, self.height))
+        overlay.set_alpha(180)
+        overlay.fill((0, 0, 0))
+        self.screen.blit(overlay, (0, 0))
+        
+        win_font = pygame.font.Font(None, 72)
+        subtitle_font = pygame.font.Font(None, 36)
+        
+        win_text = win_font.render("¡GANASTE!", True, (255, 215, 0))
+        win_rect = win_text.get_rect(center=(self.width // 2, self.height // 2 - 50))
+        self.screen.blit(win_text, win_rect)
+        
+        press_esc_text = subtitle_font.render("Presiona ESC para volver al menú", True, (255, 255, 255))
+        press_esc_rect = press_esc_text.get_rect(center=(self.width // 2, self.height // 2 + 50))
+        self.screen.blit(press_esc_text, press_esc_rect)
+    
+    #E: None
+    #S: bool
+    def check_win_condition(self):
+        if self.modo == 'modo_escapa':
+            player_pos = self.player.posicion
+            if player_pos in self.salidas:
+                return True
+        return False
+    
     #E: dt (float)
     #S: None
     def handle_movement(self, dt):
@@ -655,9 +688,18 @@ class GameWindow:
                 elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     self.running = False
             
-            self.handle_movement(dt)
+            if not self.game_won:
+                self.handle_movement(dt)
+                
+                if self.check_win_condition():
+                    self.game_won = True
+                    self.victory_sound.play()
             
             self.draw_grid()
             self.draw_player()
             self.draw_ui()
+            
+            if self.game_won:
+                self.draw_win_message()
+            
             pygame.display.flip()

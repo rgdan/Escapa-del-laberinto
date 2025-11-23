@@ -26,7 +26,7 @@ def main():
             if not current_player: continue
             
             generador = GeneradorMapa()
-            mapa, inicio = generador.generar()
+            mapa, inicio, salidas = generador.generar()
             
             if selected == 'modo_escapa':
                 title = "Modo Escapa"
@@ -35,7 +35,7 @@ def main():
                 title = "Modo Cazador"
                 print(f"Modo Cazador - Jugador: {current_player}")
             
-            game = GameWindow(mapa, title, 1200, 800, 48, current_player, inicio)
+            game = GameWindow(mapa, title, 1200, 800, 48, current_player, inicio, selected, salidas)
             game.loop()
             
             # TODO: Cuando el juego termine, agregar puntuación

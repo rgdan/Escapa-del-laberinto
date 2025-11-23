@@ -341,7 +341,7 @@ class GeneradorMapa:
                         self.matriz[vx][vy] = CAMINO
                         break
 
-        return self._convertir_a_terrenos(), self.inicio
+        return self._convertir_a_terrenos(), self.inicio, self.salidas
     
     #E: None
     #S: list of list of Terreno objects
