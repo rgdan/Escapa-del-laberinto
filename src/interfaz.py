@@ -95,18 +95,19 @@ class MainMenu:
         
         # create buttons dynamically based on resolution
         button_width = int(width * 0.5)
-        button_height = int(height * 0.1) 
+        button_height = int(height * 0.08) 
         button_x = (width - button_width) // 2
-        start_y = int(height * 0.333)
-        spacing = int(height * 0.133)
+        start_y = int(height * 0.25)
+        spacing = int(height * 0.11)
         
         # list of buttons to create
         self.buttons = [
             Button(button_x, start_y, button_width, button_height, "Modo Escapa", "modo_escapa", self.BUTTON_COLOR),
             Button(button_x, start_y + spacing, button_width, button_height, "Modo Cazador", "modo_cazador", self.BUTTON_COLOR),
             Button(button_x, start_y + spacing * 2, button_width, button_height, "Leaderboard", "leaderboard", self.BUTTON_COLOR),
-            Button(button_x, start_y + spacing * 3, button_width, button_height, "Dificultad", "dificultad", self.BUTTON_COLOR),
-            Button(button_x, start_y + spacing * 4, button_width, button_height, "Salir", "salir", self.BUTTON_EXIT_COLOR)
+            Button(button_x, start_y + spacing * 3, button_width, button_height, "Cómo Jugar", "como_jugar", self.BUTTON_COLOR),
+            Button(button_x, start_y + spacing * 4, button_width, button_height, "Dificultad", "dificultad", self.BUTTON_COLOR),
+            Button(button_x, start_y + spacing * 5, button_width, button_height, "Salir", "salir", self.BUTTON_EXIT_COLOR)
         ]
         
         self.running = True
@@ -339,6 +340,139 @@ class Leaderboard:
                 self.running = False
                 
         # Check back button click
+        if mouse_click and self.back_button.is_clicked(mouse_pos, mouse_click):
+            self.running = False
+            
+    def run(self):
+        while self.running:
+            self.interactions()
+            self.draw()
+            self.clock.tick(60)
+
+# class for how to play screen
+
+class HowToPlay:
+    def __init__(self, width, height):
+        pygame.init()
+        self.width = width
+        self.height = height
+        self.screen = pygame.display.set_mode((width, height))
+        pygame.display.set_caption("Cómo Jugar")
+        self.clock = pygame.time.Clock()
+        
+        self.BG_COLOR = (52, 78, 65)
+        self.TITLE_COLOR = (218, 215, 205)
+        self.TEXT_COLOR = (218, 215, 205)
+        self.SUBTITLE_COLOR = (163, 177, 138)
+        self.BUTTON_COLOR = (88, 129, 87)
+        
+        self.title_font = pygame.font.Font(None, int(height * 0.08))
+        self.subtitle_font = pygame.font.Font(None, int(height * 0.05))
+        self.text_font = pygame.font.Font(None, int(height * 0.03))
+        self.button_font = pygame.font.Font(None, int(height * 0.067))
+        
+        button_width = int(width * 0.25)
+        button_height = int(height * 0.08)
+        button_x = (width - button_width) // 2
+        button_y = int(height * 0.92)
+        self.back_button = Button(button_x, button_y, button_width, button_height, "Volver", "back", self.BUTTON_COLOR)
+        
+        self.tile_size = 32
+        self.texture_camino = pygame.transform.scale(pygame.image.load("sprites/background/camino.png"), (self.tile_size, self.tile_size))
+        self.texture_muro = pygame.transform.scale(pygame.image.load("sprites/background/muro.png"), (self.tile_size, self.tile_size))
+        self.texture_lianas = pygame.transform.scale(pygame.image.load("sprites/background/lianas.png"), (self.tile_size, self.tile_size))
+        self.texture_tunel = pygame.transform.scale(pygame.image.load("sprites/background/tunel.png"), (self.tile_size, self.tile_size))
+        
+        self.running = True
+        
+    def draw(self):
+        self.screen.fill(self.BG_COLOR)
+        
+        title = self.title_font.render("Cómo Jugar", True, self.TITLE_COLOR)
+        title_rect = title.get_rect(center=(self.width // 2, 40))
+        self.screen.blit(title, title_rect)
+        
+        y_pos = 90
+        
+        subtitle = self.subtitle_font.render("Modos de Juego:", True, self.SUBTITLE_COLOR)
+        self.screen.blit(subtitle, (50, y_pos))
+        y_pos += 40
+        
+        modes_text = [
+            "Modo Escapa: Encuentra la salida antes de que te alcance el enemigo",
+            "Modo Cazador: Elimina al enemigo usando trampas estratégicamente"
+        ]
+        for text in modes_text:
+            line = self.text_font.render(text, True, self.TEXT_COLOR)
+            self.screen.blit(line, (70, y_pos))
+            y_pos += 30
+        
+        y_pos += 20
+        subtitle = self.subtitle_font.render("Controles:", True, self.SUBTITLE_COLOR)
+        self.screen.blit(subtitle, (50, y_pos))
+        y_pos += 40
+        
+        controls_text = [
+            "WASD o Flechas: Mover jugador",
+            "Shift Izquierdo: Correr (consume energía)",
+            "ESC: Salir del juego"
+        ]
+        for text in controls_text:
+            line = self.text_font.render(text, True, self.TEXT_COLOR)
+            self.screen.blit(line, (70, y_pos))
+            y_pos += 30
+        
+        y_pos += 20
+        subtitle = self.subtitle_font.render("Terrenos:", True, self.SUBTITLE_COLOR)
+        self.screen.blit(subtitle, (50, y_pos))
+        y_pos += 40
+        
+        camino = Camino(0, 0)
+        muro = Muro(0, 0)
+        liana = Liana(0, 0)
+        tunel = Tunel(0, 0)
+        
+        terrenos = [
+            (self.texture_camino, "Camino", camino),
+            (self.texture_muro, "Muro", muro),
+            (self.texture_lianas, "Lianas", liana),
+            (self.texture_tunel, "Túnel", tunel)
+        ]
+        
+        for texture, name, terreno in terrenos:
+            self.screen.blit(texture, (70, y_pos))
+            
+            name_text = self.text_font.render(f"{name}:", True, self.TEXT_COLOR)
+            self.screen.blit(name_text, (115, y_pos + 5))
+            
+            player_access = "Sí" if terreno.es_accesible_jugador() else "No"
+            enemy_access = "Sí" if terreno.es_accesible_enemigo() else "No"
+            
+            access_text = self.text_font.render(
+                f"Jugador: {player_access} | Enemigo: {enemy_access}", 
+                True, self.TEXT_COLOR
+            )
+            self.screen.blit(access_text, (250, y_pos + 5))
+            
+            y_pos += 45
+        
+        self.back_button.draw(self.screen, self.button_font)
+        pygame.display.flip()
+        
+    def interactions(self):
+        mouse_pos = pygame.mouse.get_pos()
+        mouse_click = False
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+                
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_click = True
+                
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                self.running = False
+                
         if mouse_click and self.back_button.is_clicked(mouse_pos, mouse_click):
             self.running = False
             

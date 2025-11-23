@@ -1,4 +1,4 @@
-from src.interfaz import MainMenu, GameWindow, PlayerRegistration, Leaderboard
+from src.interfaz import MainMenu, GameWindow, PlayerRegistration, Leaderboard, HowToPlay
 from src.mapa import GeneradorMapa
 from src.puntuacion import ScoreManager
 import pygame
@@ -41,9 +41,12 @@ def main():
             # TODO: Cuando el juego termine, agregar puntuación
 
         elif selected == 'leaderboard':
-            print("Mostrando Leaderboard")
             leaderboard = Leaderboard(1200, 800, score_manager)
             leaderboard.run()
+        
+        elif selected == 'como_jugar':
+            how_to_play = HowToPlay(1200, 800)
+            how_to_play.run()
             
         elif selected == 'dificultad': print("Dificultad")
             
