@@ -35,7 +35,7 @@ def main():
                 title = "Modo Cazador"
                 print(f"Modo Cazador - Jugador: {current_player}")
             
-            game = GameWindow(mapa, title, 1200, 800, 40, current_player, inicio)
+            game = GameWindow(mapa, title, 1200, 800, 48, current_player, inicio)
             game.loop()
             
             # TODO: Cuando el juego termine, agregar puntuación

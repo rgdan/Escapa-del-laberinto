@@ -388,8 +388,8 @@ class GameWindow:
 
         self.grid_w = self.cols * self.cell_size
         self.grid_h = self.rows * self.cell_size
-        self.offset_y = max(0, (self.height - self.grid_h) // 2)
-        self.offset_x = max(0, (self.width - self.grid_w) // 2)
+        self.offset_x = (self.width - self.grid_w) // 2
+        self.offset_y = (self.height - self.grid_h) // 2
         
         self.player = Jugador(player_name, inicio, cell_size)
         
