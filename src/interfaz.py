@@ -1,6 +1,53 @@
 import pygame
 import sys
 
+# class for text input field
+
+class InputBox:
+    def __init__(self, x, y, width, height, font, text=''):
+        self.rect = pygame.Rect(x, y, width, height)
+        self.color_inactive = (163, 177, 138)
+        self.color_active = (218, 215, 205)
+        self.color = self.color_inactive
+        self.text = text
+        self.font = font
+        self.txt_surface = self.font.render(text, True, (218, 215, 205))
+        self.active = False
+        self.bg_color = (52, 78, 65)
+        
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            # Toggle active state if user clicked on the input box
+            if self.rect.collidepoint(event.pos):
+                self.active = not self.active
+            else:
+                self.active = False
+            self.color = self.color_active if self.active else self.color_inactive
+            
+        if event.type == pygame.KEYDOWN:
+            if self.active:
+                if event.key == pygame.K_RETURN:
+                    return 'submit'
+                elif event.key == pygame.K_BACKSPACE:
+                    self.text = self.text[:-1]
+                else:
+                    # Limitar longitud del nombre a 15 caracteres
+                    if len(self.text) < 15:
+                        self.text += event.unicode
+                # Re-render the text
+                self.txt_surface = self.font.render(self.text, True, (218, 215, 205))
+        return None
+        
+    def draw(self, screen):
+        # Draw the background box
+        pygame.draw.rect(screen, self.bg_color, self.rect)
+        pygame.draw.rect(screen, self.color, self.rect, 3, border_radius=5)
+        # Draw the text
+        screen.blit(self.txt_surface, (self.rect.x + 10, self.rect.y + 10))
+        
+    def get_text(self):
+        return self.text.strip()
+
 # class for making button
 
 class Button:
@@ -105,6 +152,200 @@ class MainMenu:
                 
         return self.selected_option
     
+# class for player tracking
+
+class PlayerRegistration:
+    def __init__(self, width, height):
+        pygame.init()
+        self.width = width
+        self.height = height
+        self.screen = pygame.display.set_mode((width, height))
+        pygame.display.set_caption("Registro de Jugador")
+        self.clock = pygame.time.Clock()
+        
+        # Colors - same earthy palette
+        self.BG_COLOR = (52, 78, 65)
+        self.TITLE_COLOR = (218, 215, 205)
+        self.BUTTON_COLOR = (88, 129, 87)
+        self.TEXT_COLOR = (218, 215, 205)
+        
+        # Fonts
+        self.title_font = pygame.font.Font(None, int(height * 0.1))
+        self.text_font = pygame.font.Font(None, int(height * 0.05))
+        self.button_font = pygame.font.Font(None, int(height * 0.067))
+        
+        # Input box
+        input_width = int(width * 0.5)
+        input_height = int(height * 0.08)
+        input_x = (width - input_width) // 2
+        input_y = int(height * 0.4)
+        self.input_box = InputBox(input_x, input_y, input_width, input_height, self.text_font)
+        
+        # Continue button
+        button_width = int(width * 0.3)
+        button_height = int(height * 0.1)
+        button_x = (width - button_width) // 2
+        button_y = int(height * 0.6)
+        self.continue_button = Button(button_x, button_y, button_width, button_height, "Continuar", "continue", self.BUTTON_COLOR)
+        
+        self.running = True
+        self.player_name = None
+        
+    def draw(self):
+        self.screen.fill(self.BG_COLOR)
+        
+        # Title
+        title_surface = self.title_font.render("Registro de Jugador", True, self.TITLE_COLOR)
+        title_rect = title_surface.get_rect(center=(self.width // 2, int(self.height * 0.15)))
+        self.screen.blit(title_surface, title_rect)
+        
+        # Instruction text
+        instruction = self.text_font.render("Ingresa tu nombre:", True, self.TEXT_COLOR)
+        instruction_rect = instruction.get_rect(center=(self.width // 2, int(self.height * 0.3)))
+        self.screen.blit(instruction, instruction_rect)
+        
+        # Input box
+        self.input_box.draw(self.screen)
+        
+        # Continue button
+        self.continue_button.draw(self.screen, self.button_font)
+        
+        pygame.display.flip()
+        
+    def interactions(self):
+        mouse_pos = pygame.mouse.get_pos()
+        mouse_click = False
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+                return
+                
+            if event.type == pygame.MOUSEBUTTONDOWN: mouse_click = True
+                
+            # Handle input box events
+            result = self.input_box.handle_event(event)
+            if result == 'submit' and self.input_box.get_text():
+                self.player_name = self.input_box.get_text()
+                self.running = False
+                
+        # Check continue button click
+        if mouse_click and self.continue_button.is_clicked(mouse_pos, mouse_click):
+            if self.input_box.get_text():
+                self.player_name = self.input_box.get_text()
+                self.running = False
+                
+    def run(self):
+        while self.running:
+            self.interactions()
+            self.draw()
+            self.clock.tick(60)
+            
+        return self.player_name
+
+# class for leaderboard display
+
+class Leaderboard:
+    def __init__(self, width, height, score_manager):
+        pygame.init()
+        self.width = width
+        self.height = height
+        self.screen = pygame.display.set_mode((width, height))
+        pygame.display.set_caption("Tabla de Clasificación")
+        self.clock = pygame.time.Clock()
+        self.score_manager = score_manager
+        
+        # Colors
+        self.BG_COLOR = (52, 78, 65)
+        self.TITLE_COLOR = (218, 215, 205)
+        self.SUBTITLE_COLOR = (163, 177, 138)
+        self.TEXT_COLOR = (218, 215, 205)
+        self.BUTTON_COLOR = (88, 129, 87)
+        
+        # Fonts
+        self.title_font = pygame.font.Font(None, int(height * 0.1))
+        self.subtitle_font = pygame.font.Font(None, int(height * 0.06))
+        self.text_font = pygame.font.Font(None, int(height * 0.04))
+        self.button_font = pygame.font.Font(None, int(height * 0.067))
+        
+        # Back button
+        button_width = int(width * 0.3)
+        button_height = int(height * 0.08)
+        button_x = (width - button_width) // 2
+        button_y = int(height * 0.88)
+        self.back_button = Button(button_x, button_y, button_width, button_height, "Volver", "back", self.BUTTON_COLOR)
+        
+        self.running = True
+        
+    def draw(self):
+        self.screen.fill(self.BG_COLOR)
+        
+        # Title
+        title_surface = self.title_font.render("Tabla de Clasificación", True, self.TITLE_COLOR)
+        title_rect = title_surface.get_rect(center=(self.width // 2, int(self.height * 0.08)))
+        self.screen.blit(title_surface, title_rect)
+        
+        # Draw two columns for the two game modes
+        col_width = self.width // 2
+        
+        # Modo Escapa (left column)
+        self.draw_score_column("Top 5 - Modo Escapa", self.score_manager.get_scores('escapa'), 0, col_width)
+        
+        # Modo Cazador (right column)
+        self.draw_score_column("Top 5 - Modo Cazador", self.score_manager.get_scores('cazador'), col_width, col_width)
+        
+        # Back button
+        self.back_button.draw(self.screen, self.button_font)
+        
+        pygame.display.flip()
+
+    # Draw a score column for a specific game mode  
+    def draw_score_column(self, title, scores, x_offset, width):
+        
+        # Subtitle
+        subtitle = self.subtitle_font.render(title, True, self.SUBTITLE_COLOR)
+        subtitle_rect = subtitle.get_rect(center=(x_offset + width // 2, int(self.height * 0.18)))
+        self.screen.blit(subtitle, subtitle_rect)
+        
+        # Score entries
+        start_y = int(self.height * 0.28)
+        spacing = int(self.height * 0.08)
+        
+        if not scores:
+            no_scores_text = self.text_font.render("No hay puntuaciones aún", True, self.TEXT_COLOR)
+            no_scores_rect = no_scores_text.get_rect(center=(x_offset + width // 2, start_y + spacing))
+            self.screen.blit(no_scores_text, no_scores_rect)
+        else:
+            for i in range(len(scores)):
+                score_text = f"{i + 1}. {scores[i][0]} - {scores[i][1]} pts"
+                score_surface = self.text_font.render(score_text, True, self.TEXT_COLOR)
+                score_rect = score_surface.get_rect(center=(x_offset + width // 2, start_y + (i + 1) * spacing))
+                self.screen.blit(score_surface, score_rect)
+                
+    def interactions(self):
+        mouse_pos = pygame.mouse.get_pos()
+        mouse_click = False
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+                
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_click = True
+                
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                self.running = False
+                
+        # Check back button click
+        if mouse_click and self.back_button.is_clicked(mouse_pos, mouse_click):
+            self.running = False
+            
+    def run(self):
+        while self.running:
+            self.interactions()
+            self.draw()
+            self.clock.tick(60)
+
 # class for the game window
 
 class GameWindow:

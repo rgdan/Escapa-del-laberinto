@@ -1,37 +1,53 @@
-from src.interfaz import  MainMenu , GameWindow
+from src.interfaz import MainMenu, GameWindow, PlayerRegistration, Leaderboard
 from src.mapa import GeneradorMapa
+from src.puntuacion import ScoreManager
 import pygame
 import sys
-
 
 # handle main menu logic
 #input: none
 #output: none
 
 def main():
+    # Inicializar el gestor de puntuaciones
+    score_manager = ScoreManager()
+    current_player = None
+    
     while True:
         menu = MainMenu(1200, 800)
         selected = menu.run()
         
-
-        generador = GeneradorMapa()
-        mapa = generador.generar()
-        
-        #TODO: dibujar cuadriculas del mapa, por ahora solo se imprime la matriz
-
         # check user input
-        if selected == 'modo_escapa': 
-            print("Modo Escapa ")
-            game = GameWindow(mapa, "Modo Escapa", 1200, 800, 40)
-            game.loop()
-
-        elif selected == 'modo_cazador':
-            print("Modo Cazador")
-            game = GameWindow(mapa, "Modo Cazador", 1200, 800, 40)
-            game.loop()
-
+        if selected == 'modo_escapa' or selected == 'modo_cazador':
+            # Registro obligatorio antes de comenzar
+            registration = PlayerRegistration(1200, 800)
+            current_player = registration.run()
             
-        elif selected == 'leaderboard': print("Leaderboard")
+            if not current_player:
+                # Usuario canceló el registro
+                continue
+            
+            # Generar mapa
+            generador = GeneradorMapa()
+            mapa = generador.generar()
+            
+            # Determinar título según el modo
+            if selected == 'modo_escapa':
+                title = "Modo Escapa"
+                print(f"Modo Escapa - Jugador: {current_player}")
+            else:
+                title = "Modo Cazador"
+                print(f"Modo Cazador - Jugador: {current_player}")
+            
+            game = GameWindow(mapa, title, 1200, 800, 40)
+            game.loop()
+            
+            # TODO: Cuando el juego termine, agregar puntuación
+
+        elif selected == 'leaderboard':
+            print("Mostrando Leaderboard")
+            leaderboard = Leaderboard(1200, 800, score_manager)
+            leaderboard.run()
             
         elif selected == 'dificultad': print("Dificultad")
             
