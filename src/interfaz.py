@@ -1,7 +1,6 @@
 import pygame
 import sys
 
-
 # class for making button
 
 class Button:
@@ -106,7 +105,7 @@ class MainMenu:
                 
         return self.selected_option
     
-
+# class for the game window
 
 class GameWindow:
     def __init__(self, mapa, title, width, height, cell_size):
@@ -130,13 +129,21 @@ class GameWindow:
         self.clock = pygame.time.Clock()
         self.running = True
 
-        # Paleta
+        # Cargar texturas
+        self.texture_camino = pygame.image.load("sprites/background/camino.png")
+        self.texture_muro = pygame.image.load("sprites/background/muro.png")
+        self.texture_tunel = pygame.image.load("sprites/background/tunel.png")
+        self.texture_lianas = pygame.image.load("sprites/background/lianas.png")
+        
+        # Escalar texturas al tamaño de celda
+        self.texture_camino = pygame.transform.scale(self.texture_camino, (self.cell_size, self.cell_size))
+        self.texture_muro = pygame.transform.scale(self.texture_muro, (self.cell_size, self.cell_size))
+        self.texture_tunel = pygame.transform.scale(self.texture_tunel, (self.cell_size, self.cell_size))
+        self.texture_lianas = pygame.transform.scale(self.texture_lianas, (self.cell_size, self.cell_size))
+
+        # Paleta (backup colors)
         self.color_bg = (34, 139, 34)      # verde
         self.color_grid = (0, 0, 0)        #negro
-        self.color_camino = (101, 67, 33) # marrón
-        self.color_muro= (128, 128, 128)   # gris
-        self.color_tunel = (255, 165, 0)   # naranja
-        self.color_liana = (34, 139, 34)   # verde
 
         # Calcular área de dibujo y centrar
         self.grid_w = self.cols * (self.cell_size ) 
@@ -149,35 +156,30 @@ class GameWindow:
         for x in range(self.rows):
             for y in range(self.cols):
                 celda = self.mapa[x][y]
+                pos_x = self.offset_x + y * self.cell_size
+                pos_y = self.offset_y + x * self.cell_size
+                
                 if celda == 0:
-                    color = self.color_camino
+                    texture = self.texture_camino
                 elif celda == 1:
-                    color = self.color_muro
+                    texture = self.texture_muro
                 elif celda == 2:
-                    color = self.color_liana
+                    texture = self.texture_lianas
                 elif celda == 3:
-                    color = self.color_tunel
-                rect = pygame.Rect(
-                    self.offset_x + y * (self.cell_size ),
-                    self.offset_y + x * (self.cell_size ),
-                    self.cell_size,
-                    self.cell_size
-                )
-                pygame.draw.rect(self.screen, color, rect)
+                    texture = self.texture_tunel
+                
+                self.screen.blit(texture, (pos_x, pos_y))
+                
+                # Draw grid border
+                rect = pygame.Rect(pos_x, pos_y, self.cell_size, self.cell_size)
                 pygame.draw.rect(self.screen, self.color_grid, rect, 1)
         pygame.display.flip()
 
+    # run game untill window is closed or ESC is pressed
     def loop(self):
-        """
-        Corre la ventana de juego hasta que:
-        - se presione ESC
-        - se cierre la ventana
-        """
         while self.running:
             for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.running = False
-                elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    self.running = False
+                if event.type == pygame.QUIT: self.running = False
+                elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE: self.running = False
 
             self.draw_grid()
