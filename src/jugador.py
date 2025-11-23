@@ -51,8 +51,6 @@ class Jugador(Entidad):
     #E: dt (float), keys (pygame key state)
     #S: None
     def update(self, dt, keys):
-        self.is_moving = False
-        
         if keys[pygame.K_LSHIFT] and self.sprints > 0 and not self.sprint_active:
             self.sprint_active = True
             self.sprint_timer = 0.0
@@ -65,6 +63,16 @@ class Jugador(Entidad):
                 self.sprint_active = False
                 self.sprint_timer = 0.0
         
+        if not self.sprint_active:
+            self.time_since_sprint_used += dt
+            if self.time_since_sprint_used >= self.sprint_recharge_time:
+                if self.sprints < self.max_sprints:
+                    self.sprints += 1
+                    self.time_since_sprint_used = 0
+    
+    #E: dt (float)
+    #S: None
+    def update_animation(self, dt):
         if self.is_moving:
             self.animation_timer += dt
             if self.animation_timer >= self.animation_speed:
@@ -73,13 +81,6 @@ class Jugador(Entidad):
         else:
             self.animation_frame = 0
             self.animation_timer = 0
-        
-        if not self.sprint_active:
-            self.time_since_sprint_used += dt
-            if self.time_since_sprint_used >= self.sprint_recharge_time:
-                if self.sprints < self.max_sprints:
-                    self.sprints += 1
-                    self.time_since_sprint_used = 0
     
     #E: nueva_fila (int), nueva_col (int), mapa (list of Terreno objects)
     #S: bool (True si se movió)

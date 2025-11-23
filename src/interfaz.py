@@ -601,10 +601,6 @@ class GameWindow:
     #E: dt (float)
     #S: None
     def handle_movement(self, dt):
-        if self.move_cooldown > 0:
-            self.move_cooldown -= dt
-            return
-        
         keys = pygame.key.get_pressed()
         
         was_sprinting = self.player.sprint_active
@@ -615,6 +611,13 @@ class GameWindow:
             self.sprint_sound_played = True
         elif not self.player.sprint_active:
             self.sprint_sound_played = False
+        
+        if self.move_cooldown > 0:
+            self.move_cooldown -= dt
+            self.player.update_animation(dt)
+            return
+        
+        self.player.is_moving = False
         
         player_row, player_col = self.player.posicion
         moved = False
@@ -631,6 +634,8 @@ class GameWindow:
         elif keys[pygame.K_d] or keys[pygame.K_RIGHT]:
             self.player.direction = 'right'
             moved = self.player.try_move(player_row, player_col + 1, self.mapa)
+        
+        self.player.update_animation(dt)
         
         if moved:
             if self.player.sprint_active:
