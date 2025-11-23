@@ -1,6 +1,6 @@
 import random
+from src.terreno import Camino, Muro, Liana, Tunel
 
-# Códigos de celdas
 CAMINO = 0
 MURO   = 1
 LIANA  = 2
@@ -334,7 +334,6 @@ class GeneradorMapa:
                 if not es_borde_v and self.matriz[vx][vy] == CAMINO:
                     tiene_vecino_camino = True
                     break
-            # si no tiene vecino CAMINO, forzar el primer vecino interior como CAMINO
             if not tiene_vecino_camino:
                 for vx, vy in self.obtener_vecinos_4_direcciones(sx, sy):
                     es_borde_v = (vx in (0, self.filas-1)) or (vy in (0, self.columnas-1))
@@ -342,7 +341,29 @@ class GeneradorMapa:
                         self.matriz[vx][vy] = CAMINO
                         break
 
-        return self.matriz, self.inicio
+        return self._convertir_a_terrenos(), self.inicio
+    
+    #E: None
+    #S: list of list of Terreno objects
+    def _convertir_a_terrenos(self):
+        mapa_terrenos = []
+        for fila_idx in range(self.filas):
+            fila_terrenos = []
+            for col_idx in range(self.columnas):
+                celda = self.matriz[fila_idx][col_idx]
+                if celda == CAMINO:
+                    terreno = Camino(fila_idx, col_idx)
+                elif celda == MURO:
+                    terreno = Muro(fila_idx, col_idx)
+                elif celda == LIANA:
+                    terreno = Liana(fila_idx, col_idx)
+                elif celda == TUNEL:
+                    terreno = Tunel(fila_idx, col_idx)
+                else:
+                    terreno = Muro(fila_idx, col_idx)
+                fila_terrenos.append(terreno)
+            mapa_terrenos.append(fila_terrenos)
+        return mapa_terrenos
 
 # ----------------- Ejemplo de uso -----------------
 if __name__ == "__main__":

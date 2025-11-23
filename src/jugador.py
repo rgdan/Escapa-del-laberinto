@@ -73,18 +73,14 @@ class Jugador(Entidad):
                     self.sprints += 1
                     self.time_since_sprint_used = 0
     
-    #E: nueva_fila (int), nueva_col (int), mapa (list)
+    #E: nueva_fila (int), nueva_col (int), mapa (list of Terreno objects)
     #S: bool (True si se movió)
     def try_move(self, nueva_fila, nueva_col, mapa):
-        if nueva_fila < 0 or nueva_fila >= len(mapa):
-            return False
-        if nueva_col < 0 or nueva_col >= len(mapa[0]):
-            return False
+        if nueva_fila < 0 or nueva_fila >= len(mapa): return False
+        if nueva_col < 0 or nueva_col >= len(mapa[0]): return False
         
-        celda = mapa[nueva_fila][nueva_col]
-        
-        if celda == 1 or celda == 2:
-            return False
+        terreno = mapa[nueva_fila][nueva_col]
+        if not terreno.es_accesible_jugador(): return False
         
         self.posicion = (nueva_fila, nueva_col)
         self.is_moving = True

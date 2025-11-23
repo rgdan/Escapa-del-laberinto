@@ -1,6 +1,7 @@
 import pygame
 import sys
 from src.jugador import Jugador
+from src.terreno import Camino, Muro, Liana, Tunel
 
 # class for text input field
 
@@ -404,18 +405,20 @@ class GameWindow:
         self.screen.fill(self.color_bg)
         for x in range(self.rows):
             for y in range(self.cols):
-                celda = self.mapa[x][y]
+                terreno = self.mapa[x][y]
                 pos_x = self.offset_x + y * self.cell_size
                 pos_y = self.offset_y + x * self.cell_size
                 
-                if celda == 0:
+                if isinstance(terreno, Camino):
                     texture = self.texture_camino
-                elif celda == 1:
+                elif isinstance(terreno, Muro):
                     texture = self.texture_muro
-                elif celda == 2:
+                elif isinstance(terreno, Liana):
                     texture = self.texture_lianas
-                elif celda == 3:
+                elif isinstance(terreno, Tunel):
                     texture = self.texture_tunel
+                else:
+                    texture = self.texture_muro
                 
                 self.screen.blit(texture, (pos_x, pos_y))
                 
