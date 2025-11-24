@@ -1,4 +1,4 @@
-from src.interfaz import MainMenu, GameWindow, PlayerRegistration, Leaderboard, HowToPlay
+from src.interfaz import MainMenu, GameWindow, PlayerRegistration, Leaderboard, HowToPlay, DifficultySelection
 from src.mapa import GeneradorMapa
 from src.puntuacion import ScoreManager
 import pygame
@@ -12,6 +12,7 @@ def main():
     # Inicializar el gestor de puntuaciones
     score_manager = ScoreManager()
     current_player = None
+    current_difficulty = 'normal'  # Dificultad por defecto
     
     while True:
         menu = MainMenu(1200, 800)
@@ -30,12 +31,12 @@ def main():
             
             if selected == 'modo_escapa':
                 title = "Modo Escapa"
-                print(f"Modo Escapa - Jugador: {current_player}")
+                print(f"Modo Escapa - Jugador: {current_player} - Dificultad: {current_difficulty}")
             else:
                 title = "Modo Cazador"
-                print(f"Modo Cazador - Jugador: {current_player}")
+                print(f"Modo Cazador - Jugador: {current_player} - Dificultad: {current_difficulty}")
             
-            game = GameWindow(mapa, title, 1600, 800, 48, current_player, inicio, selected, salidas)
+            game = GameWindow(mapa, title, 1600, 800, 48, current_player, inicio, selected, salidas, current_difficulty)
             game.loop()
             
             # Guardar puntuación al terminar el juego (victoria o derrota)
@@ -72,7 +73,13 @@ def main():
             how_to_play = HowToPlay(1200, 800)
             how_to_play.run()
             
-        elif selected == 'dificultad': print("Dificultad")
+        elif selected == 'dificultad':
+            # Mostrar pantalla de dificultad
+            difficulty_screen = DifficultySelection(1200, 800)
+            selected_difficulty = difficulty_screen.run()
+            if selected_difficulty:
+                current_difficulty = selected_difficulty
+                print(f"Dificultad cambiada a: {current_difficulty}")
             
         elif selected in ['salir', 'quit', None]:
             print("Exiting game...")
