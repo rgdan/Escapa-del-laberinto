@@ -21,3 +21,22 @@ class Tunel(Terreno):
 class Muro(Terreno):
     def es_accesible_jugador(self): return False
     def es_accesible_enemigo(self): return False
+
+class Trampa(Terreno):
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.activa = True
+        
+    def es_accesible_jugador(self):
+        return True
+    
+    def es_accesible_enemigo(self):
+        # El enemigo puede pasar por la trampa
+        return True
+    
+    def activar_trampa(self):
+        """Activa la trampa cuando el enemigo pasa por ella"""
+        if self.activa:
+            self.activa = False
+            return True
+        return False
