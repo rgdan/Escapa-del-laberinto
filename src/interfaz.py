@@ -506,6 +506,9 @@ class GameWindow:
         self.clock = pygame.time.Clock()
         self.running = True
         self.game_won = False
+        
+        self.game_time = 0.0
+        self.final_score = 0
 
         self.texture_camino = pygame.image.load("sprites/background/camino.png")
         self.texture_muro = pygame.image.load("sprites/background/muro.png")
@@ -615,11 +618,20 @@ class GameWindow:
         subtitle_font = pygame.font.Font(None, 36)
         
         win_text = win_font.render("¡GANASTE!", True, (255, 215, 0))
-        win_rect = win_text.get_rect(center=(self.width // 2, self.height // 2 - 50))
+        win_rect = win_text.get_rect(center=(self.width // 2, self.height // 2 - 80))
         self.screen.blit(win_text, win_rect)
         
+        if self.modo == 'modo_escapa':
+            time_text = subtitle_font.render(f"Tiempo: {self.game_time:.1f}s", True, (255, 255, 255))
+            time_rect = time_text.get_rect(center=(self.width // 2, self.height // 2 - 20))
+            self.screen.blit(time_text, time_rect)
+            
+            score_text = subtitle_font.render(f"Puntuación: {self.final_score}", True, (255, 215, 0))
+            score_rect = score_text.get_rect(center=(self.width // 2, self.height // 2 + 20))
+            self.screen.blit(score_text, score_rect)
+        
         press_esc_text = subtitle_font.render("Presiona ESC para volver al menú", True, (255, 255, 255))
-        press_esc_rect = press_esc_text.get_rect(center=(self.width // 2, self.height // 2 + 50))
+        press_esc_rect = press_esc_text.get_rect(center=(self.width // 2, self.height // 2 + 80))
         self.screen.blit(press_esc_text, press_esc_rect)
     
     #E: None
@@ -630,6 +642,22 @@ class GameWindow:
             if player_pos in self.salidas:
                 return True
         return False
+    
+    #E: None
+    #S: int
+    def calculate_score(self):
+        if self.modo == 'modo_escapa':
+            intervals = int(self.game_time / 5.0)
+            score = 1000 - (intervals * 100)
+            return max(score, 0)
+        return 0
+    
+    #E: None
+    #S: int or None
+    def get_final_score(self):
+        if self.game_won:
+            return self.final_score
+        return None
     
     #E: dt (float)
     #S: None
@@ -689,10 +717,12 @@ class GameWindow:
                     self.running = False
             
             if not self.game_won:
+                self.game_time += dt
                 self.handle_movement(dt)
                 
                 if self.check_win_condition():
                     self.game_won = True
+                    self.final_score = self.calculate_score()
                     self.victory_sound.play()
             
             self.draw_grid()

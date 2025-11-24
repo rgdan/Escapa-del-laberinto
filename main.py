@@ -38,7 +38,14 @@ def main():
             game = GameWindow(mapa, title, 1200, 800, 48, current_player, inicio, selected, salidas)
             game.loop()
             
-            # TODO: Cuando el juego termine, agregar puntuación
+            final_score = game.get_final_score()
+            if final_score is not None:
+                if selected == 'modo_escapa':
+                    score_manager.add_score(current_player, final_score, 'escapa')
+                    print(f"Puntuación guardada: {current_player} - {final_score} pts")
+                elif selected == 'modo_cazador':
+                    score_manager.add_score(current_player, final_score, 'cazador')
+                    print(f"Puntuación guardada: {current_player} - {final_score} pts")
 
         elif selected == 'leaderboard':
             leaderboard = Leaderboard(1200, 800, score_manager)
@@ -51,7 +58,7 @@ def main():
         elif selected == 'dificultad': print("Dificultad")
             
         elif selected in ['salir', 'quit', None]:
-            print("eixitng")
+            print("Exiting game...")
             break
             
     pygame.quit()
