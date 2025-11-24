@@ -867,11 +867,7 @@ class GameWindow:
             player_pos = self.player.posicion
             if player_pos in self.salidas:
                 return True
-        elif self.modo == 'modo_cazador':
-            # Ganar cuando se capturan 3 enemigos
-            if self.enemigos_eliminados >= 3:
-                return True
-        return False
+        
 
     def calculate_score(self):
         if self.modo == 'modo_escapa':

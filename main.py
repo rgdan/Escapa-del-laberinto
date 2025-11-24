@@ -55,15 +55,17 @@ def main():
                         print(f"¡Nuevo récord! Posición #{rank} en el Top 5")
             
             elif game.game_over and game.modo == 'modo_cazador':
-                # En modo Cazador, guardar puntuación incluso en game over
+                # En modo Cazador, guardar puntuación solo si es mayor a 0
                 final_score = game.calculate_score()
                 
-                if final_score is not None:
+                if final_score is not None and final_score > 0:
                     is_top_5 = score_manager.add_score(player_name, final_score, modo)
                     
                     if is_top_5:
                         rank = score_manager.get_rank(player_name, final_score, modo)
                         print(f"Puntuación registrada: Posición #{rank} en el Top 5")
+                else:
+                    print(f"Puntuación muy baja ({final_score}) - No se guarda en el leaderboard")
 
         elif selected == 'leaderboard':
             leaderboard = Leaderboard(1200, 800, score_manager)
