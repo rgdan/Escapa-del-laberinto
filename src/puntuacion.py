@@ -1,4 +1,6 @@
 # keep track of player scores
+# Modo Escapa: 1000 base - 100 cada 5s
+# Modo Cazador: 1000 base + 200 por captura - 150 por escape - 30 cada 5s
 
 class ScoreManager:
     def __init__(self):

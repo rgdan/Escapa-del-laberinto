@@ -401,8 +401,8 @@ class HowToPlay:
         y_pos += 40
         
         modes_text = [
-            "Modo Escapa: Encuentra la salida antes de que te alcance el enemigo",
-            "Modo Cazador: Elimina al enemigo usando trampas estratégicamente"
+            "Modo Escapa: Encuentra la salida antes de que te alcance el enemigo(Puedes utilizar trampas para deshacerte de los enemigos)",
+            "Modo Cazador: Elimina al enemigo colisionando contra él, evita que llegue a la salida"
         ]
         for text in modes_text:
             line = self.text_font.render(text, True, self.TEXT_COLOR)
@@ -417,7 +417,7 @@ class HowToPlay:
         controls_text = [
             "WASD o Flechas: Mover jugador",
             "Shift Izquierdo: Correr (consume energía)",
-            "Espacio: Colocar trampa (modo Cazador)",
+            "Espacio: Colocar trampa (modo Escapa)",
             "ESC: Salir del juego"
         ]
         for text in controls_text:
@@ -592,6 +592,11 @@ class GameWindow:
         self.trampas_colocadas = 0
         self.enemigos_eliminados = 0
         
+        # Variables adicionales para modo Cazador
+        self.enemigos_escapados = 0
+        self.penalty_score = 0
+        self.bonus_score = 0
+        
         self.spawn_enemigos()
         
         self.font = pygame.font.Font(None, 36)
@@ -679,21 +684,26 @@ class GameWindow:
             
             enemies_text = self.font.render(f"Enemigos: {len(self.enemigos)}", True, self.color_text)
             self.screen.blit(enemies_text, (ui_x, trap_y + 40))
-            
-            
         
         # UI adicional para modo Cazador
         elif self.modo == 'modo_cazador':
             enemies_y = ui_y + 50
-            enemies_text = self.font.render(f"Enemigos eliminados: {self.enemigos_eliminados}", True, self.color_text)
-            self.screen.blit(enemies_text, (ui_x, enemies_y))
             
-            instruction_font = pygame.font.Font(None, 24)
-            instruction = instruction_font.render("Toca a los enemigos para eliminarlos", True, (255, 255, 0))
-            self.screen.blit(instruction, (ui_x, enemies_y + 40))
+            # Mostrar enemigos capturados
+            captured_text = self.font.render(f"Capturados: {self.enemigos_eliminados}", True, (0, 255, 0))
+            self.screen.blit(captured_text, (ui_x, enemies_y))
+            
+            # Mostrar enemigos escapados
+            escaped_text = self.font.render(f"Escapados: {self.enemigos_escapados}", True, (255, 100, 100))
+            self.screen.blit(escaped_text, (ui_x, enemies_y + 35))
+            
+            # Mostrar puntuación actual
+            current_score = self.calculate_score()
+            score_text = self.font.render(f"Puntos: {current_score}", True, (255, 215, 0))
+            self.screen.blit(score_text, (ui_x, enemies_y + 70))
 
-    #E: None
-    #S: None
+    # ...existing code...
+
     def draw_win_message(self):
         overlay = pygame.Surface((self.width, self.height))
         overlay.set_alpha(180)
@@ -702,9 +712,10 @@ class GameWindow:
         
         win_font = pygame.font.Font(None, 72)
         subtitle_font = pygame.font.Font(None, 36)
+        small_font = pygame.font.Font(None, 28)
         
         win_text = win_font.render("¡GANASTE!", True, (255, 215, 0))
-        win_rect = win_text.get_rect(center=(self.width // 2, self.height // 2 - 80))
+        win_rect = win_text.get_rect(center=(self.width // 2, self.height // 2 - 120))
         self.screen.blit(win_text, win_rect)
         
         if self.modo == 'modo_escapa':
@@ -717,15 +728,20 @@ class GameWindow:
             self.screen.blit(score_text, score_rect)
         elif self.modo == 'modo_cazador':
             time_text = subtitle_font.render(f"Tiempo: {self.game_time:.1f}s", True, (255, 255, 255))
-            time_rect = time_text.get_rect(center=(self.width // 2, self.height // 2 - 20))
+            time_rect = time_text.get_rect(center=(self.width // 2, self.height // 2 - 60))
             self.screen.blit(time_text, time_rect)
             
-            traps_text = subtitle_font.render(f"Trampas usadas: {self.trampas_colocadas}/{self.max_trampas}", True, (255, 255, 255))
-            traps_rect = traps_text.get_rect(center=(self.width // 2, self.height // 2 + 20))
-            self.screen.blit(traps_text, traps_rect)
+            # Estadísticas
+            captured_text = small_font.render(f"Enemigos capturados: {self.enemigos_eliminados} (+{self.bonus_score} pts)", True, (0, 255, 0))
+            captured_rect = captured_text.get_rect(center=(self.width // 2, self.height // 2 - 20))
+            self.screen.blit(captured_text, captured_rect)
             
-            score_text = subtitle_font.render(f"Puntuación: {self.final_score}", True, (255, 215, 0))
-            score_rect = score_text.get_rect(center=(self.width // 2, self.height // 2 + 60))
+            escaped_text = small_font.render(f"Enemigos escapados: {self.enemigos_escapados} ({self.penalty_score} pts)", True, (255, 100, 100))
+            escaped_rect = escaped_text.get_rect(center=(self.width // 2, self.height // 2 + 10))
+            self.screen.blit(escaped_text, escaped_rect)
+            
+            score_text = subtitle_font.render(f"Puntuación Final: {self.final_score}", True, (255, 215, 0))
+            score_rect = score_text.get_rect(center=(self.width // 2, self.height // 2 + 50))
             self.screen.blit(score_text, score_rect)
         
         press_esc_text = subtitle_font.render("Presiona ESC para volver al menú", True, (255, 255, 255))
@@ -737,10 +753,6 @@ class GameWindow:
             player_pos = self.player.posicion
             if player_pos in self.salidas:
                 return True
-        elif self.modo == 'modo_cazador':
-            # Ganar si eliminamos todos los enemigos (3 en total)
-            if self.enemigos_eliminados >= 3:
-                return True
         return False
 
     def calculate_score(self):
@@ -749,9 +761,22 @@ class GameWindow:
             score = 1000 - (intervals * 100)
             return max(score, 0)
         elif self.modo == 'modo_cazador':
-            # Puntuación basada en tiempo
-            time_penalty = int(self.game_time / 3.0) * 50
-            score = 1000 - time_penalty
+            # Puntuación comienza en 0
+            base_score = 0
+            
+            # Bonificación por enemigos capturados (+200 por cada uno)
+            capture_bonus = self.enemigos_eliminados * 200
+            self.bonus_score = capture_bonus
+            
+            # Penalización por enemigos escapados (-150 por cada uno)
+            escape_penalty = self.enemigos_escapados * 100
+            self.penalty_score = -escape_penalty
+            
+            # Penalización por tiempo (más suave) - solo se aplica al final
+            #time_penalty = int(self.game_time / 5.0) * 30
+            
+            # Puntuación final
+            score = base_score + capture_bonus - escape_penalty 
             return max(score, 0)
         return 0
     
@@ -807,7 +832,7 @@ class GameWindow:
         
         for _ in range(num_enemigos):
             attempts = 0
-            while attempts < 100:
+            while attempts < 200:
                 row = random.randint(0, self.rows - 1)
                 col = random.randint(0, self.cols - 1)
                 
@@ -898,6 +923,9 @@ class GameWindow:
         for i in sorted(enemigos_a_eliminar, reverse=True):
             del self.enemigos[i]
             self.enemigos_eliminados += 1
+            
+            # Generar nuevo enemigo por cada uno capturado
+            self.spawn_nuevo_enemigo()
 
     # Mover enemigos
     def move_enemigos(self, dt):
@@ -942,21 +970,42 @@ class GameWindow:
         
         game_over_font = pygame.font.Font(None, 72)
         subtitle_font = pygame.font.Font(None, 36)
+        small_font = pygame.font.Font(None, 28)
         
         game_over_text = game_over_font.render("GAME OVER", True, (255, 0, 0))
-        game_over_rect = game_over_text.get_rect(center=(self.width // 2, self.height // 2 - 40))
+        game_over_rect = game_over_text.get_rect(center=(self.width // 2, self.height // 2 - 80))
         self.screen.blit(game_over_text, game_over_rect)
         
         if self.modo == 'modo_escapa':
             death_text = subtitle_font.render("¡Te atrapó el enemigo!", True, (255, 255, 255))
+            death_rect = death_text.get_rect(center=(self.width // 2, self.height // 2 - 20))
+            self.screen.blit(death_text, death_rect)
+
+            score_text = subtitle_font.render(f"Puntuación: {self.final_score}", True, (255, 215, 0))
+            score_rect = score_text.get_rect(center=(self.width // 2, self.height // 2 + 20))
+            self.screen.blit(score_text, score_rect)
         else:  # modo_cazador
-            death_text = subtitle_font.render("¡El enemigo escapó!", True, (255, 255, 255))
-        
-        death_rect = death_text.get_rect(center=(self.width // 2, self.height // 2 + 20))
-        self.screen.blit(death_text, death_rect)
+            death_text = subtitle_font.render("¡Todos los enemigos escaparon!", True, (255, 255, 255))
+            death_rect = death_text.get_rect(center=(self.width // 2, self.height // 2 - 40))
+            self.screen.blit(death_text, death_rect)
+            
+            # Mostrar estadísticas finales
+            final_score = self.calculate_score()
+            
+            captured_text = small_font.render(f"Enemigos capturados: {self.enemigos_eliminados} (+{self.bonus_score} pts)", True, (0, 255, 0))
+            captured_rect = captured_text.get_rect(center=(self.width // 2, self.height // 2))
+            self.screen.blit(captured_text, captured_rect)
+            
+            escaped_text = small_font.render(f"Enemigos escapados: {self.enemigos_escapados} ({self.penalty_score} pts)", True, (255, 100, 100))
+            escaped_rect = escaped_text.get_rect(center=(self.width // 2, self.height // 2 + 30))
+            self.screen.blit(escaped_text, escaped_rect)
+            
+            score_text = subtitle_font.render(f"Puntuación Final: {final_score}", True, (255, 215, 0))
+            score_rect = score_text.get_rect(center=(self.width // 2, self.height // 2 + 70))
+            self.screen.blit(score_text, score_rect)
         
         press_esc_text = subtitle_font.render("Presiona ESC para volver al menú", True, (255, 255, 255))
-        press_esc_rect = press_esc_text.get_rect(center=(self.width // 2, self.height // 2 + 80))
+        press_esc_rect = press_esc_text.get_rect(center=(self.width // 2, self.height // 2 + 120))
         self.screen.blit(press_esc_text, press_esc_rect)
 
     def colocar_trampa(self):
@@ -1036,17 +1085,22 @@ class GameWindow:
             # Eliminar enemigos que escaparon en orden inverso
             for i in sorted(enemigos_escapados, reverse=True):
                 del self.enemigos[i]
+                self.enemigos_escapados += 1
             
-            # Generar un nuevo enemigo por cada uno que escapó
-            for _ in enemigos_escapados:
-                self.spawn_nuevo_enemigo()
+            # NO generar nuevos enemigos cuando escapan
+            
+            # Si todos los enemigos escaparon, game over
+            if len(self.enemigos) == 0:
+                self.game_over = True
+                if self.death_sound:
+                    self.death_sound.play()
     
     def spawn_nuevo_enemigo(self):
         """Generar un nuevo enemigo en posición aleatoria alejada del jugador"""
         import random
         
         attempts = 0
-        while attempts < 100:
+        while attempts < 200:
             row = random.randint(0, self.rows - 1)
             col = random.randint(0, self.cols - 1)
             

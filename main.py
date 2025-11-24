@@ -35,24 +35,34 @@ def main():
                 title = "Modo Cazador"
                 print(f"Modo Cazador - Jugador: {current_player}")
             
-            game = GameWindow(mapa, title, 1200, 800, 48, current_player, inicio, selected, salidas)
+            game = GameWindow(mapa, title, 1600, 800, 48, current_player, inicio, selected, salidas)
             game.loop()
             
-            # Después de que termine el juego (dentro del loop principal):
-            if game.game_won:
+            # Guardar puntuación al terminar el juego (victoria o derrota)
+            final_score = None
+            player_name = game.get_player_name()
+            modo = 'escapa' if game.modo == 'modo_escapa' else 'cazador'
+            
+            if game.game_won :
                 final_score = game.get_final_score()
-                player_name = game.get_player_name()
                 
-                if final_score is not None:
-                    # Determinar el modo para guardar el score
-                    modo = 'escapa' if game.modo == 'modo_escapa' else 'cazador'
-                    
-                    # Agregar el score
+                if final_score is not None and final_score > 0:
                     is_top_5 = score_manager.add_score(player_name, final_score, modo)
                     
                     if is_top_5:
                         rank = score_manager.get_rank(player_name, final_score, modo)
                         print(f"¡Nuevo récord! Posición #{rank} en el Top 5")
+            
+            elif game.game_over and game.modo == 'modo_cazador':
+                # En modo Cazador, guardar puntuación incluso en game over
+                final_score = game.calculate_score()
+                
+                if final_score is not None:
+                    is_top_5 = score_manager.add_score(player_name, final_score, modo)
+                    
+                    if is_top_5:
+                        rank = score_manager.get_rank(player_name, final_score, modo)
+                        print(f"Puntuación registrada: Posición #{rank} en el Top 5")
 
         elif selected == 'leaderboard':
             leaderboard = Leaderboard(1200, 800, score_manager)
