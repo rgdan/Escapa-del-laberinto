@@ -100,12 +100,12 @@ class Enemigo(Entidad):
                 nueva_pos = self._persecucion_simple_pos(pos_jugador, mapa)
         
         elif modo == "Cazador":
-            # Buscar la salida más cercana
+            # Prioridad: Buscar salida más cercana evitando al jugador
             if mapa and salidas:
-                nueva_pos = self._buscar_salida(salidas, mapa, pos_jugador)
+                nueva_pos = self._buscar_salida_inteligente(salidas, mapa, pos_jugador)
             
+            # Si no puede ir a la salida, huir del jugador
             if not nueva_pos:
-                # Si no hay salidas, huir del jugador
                 nueva_pos = self._huir_jugador_pos(pos_jugador, mapa)
         
         # Aplicar el movimiento solo si hay una posición válida
@@ -377,5 +377,90 @@ class Enemigo(Entidad):
         mejor_escape = self._encontrar_mejor_escape(pos_jugador, mapa)
         if mejor_escape:
             return mejor_escape
+        
+        return None
+
+    def _buscar_salida_inteligente(self, salidas, mapa, pos_jugador):
+        """Busca la salida más cercana de forma inteligente, evitando al jugador solo si es necesario"""
+        from collections import deque
+        
+        # Encontrar todas las salidas accesibles con sus distancias
+        salidas_accesibles = []
+        for salida in salidas:
+            distancia = abs(self.posicion[0] - salida[0]) + abs(self.posicion[1] - salida[1])
+            salidas_accesibles.append((salida, distancia))
+        
+        # Ordenar salidas por distancia
+        salidas_accesibles.sort(key=lambda x: x[1])
+        
+        # Intentar llegar a cada salida en orden de cercanía
+        for salida, _ in salidas_accesibles:
+            camino = self._buscar_camino_a_salida(salida, mapa, pos_jugador, evitar_jugador=True)
+            if camino:
+                return camino
+        
+        # Si no puede evitar al jugador, intentar sin evitarlo
+        for salida, _ in salidas_accesibles:
+            camino = self._buscar_camino_a_salida(salida, mapa, pos_jugador, evitar_jugador=False)
+            if camino:
+                return camino
+        
+        return None
+    
+    def _buscar_camino_a_salida(self, salida, mapa, pos_jugador, evitar_jugador=True):
+        """Busca un camino a la salida específica usando BFS"""
+        from collections import deque
+        
+        inicio = tuple(self.posicion)
+        objetivo = tuple(salida)
+        
+        # Si ya estamos en la salida
+        if inicio == objetivo:
+            return list(salida)
+        
+        # BFS para encontrar el camino más corto
+        cola = deque([(inicio, [inicio])])
+        visitados = {inicio}
+        
+        direcciones = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+        
+        while cola:
+            (row, col), camino = cola.popleft()
+            
+            # Explorar vecinos
+            for dr, dc in direcciones:
+                nueva_row, nueva_col = row + dr, col + dc
+                nueva_pos = (nueva_row, nueva_col)
+                
+                # Verificar límites
+                if (nueva_row < 0 or nueva_row >= len(mapa) or 
+                    nueva_col < 0 or nueva_col >= len(mapa[0])):
+                    continue
+                
+                # Verificar si ya visitamos esta posición
+                if nueva_pos in visitados:
+                    continue
+                
+                # Verificar si el enemigo puede acceder a esta casilla
+                if not mapa[nueva_row][nueva_col].es_accesible_enemigo():
+                    continue
+                
+                # Evitar al jugador solo si está activado y muy cerca
+                if evitar_jugador:
+                    distancia_jugador = abs(nueva_row - pos_jugador[0]) + abs(nueva_col - pos_jugador[1])
+                    if distancia_jugador <= 1:
+                        # Skip esta posición si el jugador está demasiado cerca
+                        continue
+                
+                visitados.add(nueva_pos)
+                nuevo_camino = camino + [nueva_pos]
+                
+                # Si encontramos la salida, retornar el siguiente paso
+                if nueva_pos == objetivo:
+                    if len(nuevo_camino) > 1:
+                        return list(nuevo_camino[1])
+                    return list(nueva_pos)
+                
+                cola.append((nueva_pos, nuevo_camino))
         
         return None
