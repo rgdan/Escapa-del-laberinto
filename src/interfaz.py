@@ -674,6 +674,11 @@ class GameWindow:
             self.death_sound = pygame.mixer.Sound("sounds/death.mp3")
         except:
             self.death_sound = None
+        
+        try:
+            self.defeat_sound = pygame.mixer.Sound("sounds/defeat.mp3")
+        except:
+            self.defeat_sound = None
 
         self.color_bg = (34, 139, 34)
         self.color_grid = (0, 0, 0)
@@ -986,6 +991,12 @@ class GameWindow:
                         self.game_over = True
                         if self.death_sound:
                             self.death_sound.play()
+                        if self.defeat_sound:
+                            self.defeat_sound.play()
+                    if self.check_win_condition():
+                        self.game_won = True
+                        if self.victory_sound:
+                            self.victory_sound.play()
                     
                     # Verificar trampas
                     self.check_trampa_colision()
@@ -998,12 +1009,11 @@ class GameWindow:
                     # Verificar si algún enemigo escapó y generar uno nuevo
                     self.check_enemy_escape()
                 
-                if self.check_win_condition():
+                if  self.check_win_condition():
                     self.game_won = True
                     self.final_score = self.calculate_score()
-                    if self.victory_sound:
-                        self.victory_sound.play()
-            
+                    if self.death_sound:
+                        self.death_sound.play()
             self.draw_grid()
             if self.modo == 'modo_escapa':
                 self.draw_trampas()
@@ -1201,13 +1211,13 @@ class GameWindow:
                 del self.enemigos[i]
                 self.enemigos_escapados += 1
             
-            # NO generar nuevos enemigos cuando escapan
+            
             
             # Si todos los enemigos escaparon, game over
             if len(self.enemigos) == 0:
                 self.game_over = True
-                if self.death_sound:
-                    self.death_sound.play()
+                if self.defeat_sound:
+                    self.defeat_sound.play()
     
     def spawn_nuevo_enemigo(self):
         """Generar un nuevo enemigo en posición aleatoria alejada del jugador"""
