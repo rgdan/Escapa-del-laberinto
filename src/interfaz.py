@@ -724,6 +724,12 @@ class GameWindow:
         self.trampas_colocadas = 0
         self.enemigos_eliminados = 0
         
+        # Bonificación por atrapar enemigos en Modo Escapa
+        self.trap_bonus = 0
+        
+        # Cola de respawn para enemigos atrapados (tiempo, posición spawn)
+        self.enemigos_respawn_queue = []
+        
         # Variables adicionales para modo Cazador
         self.enemigos_escapados = 0
         self.penalty_score = 0
@@ -866,8 +872,13 @@ class GameWindow:
         
         if self.modo == 'modo_escapa':
             time_text = subtitle_font.render(f"Tiempo: {self.game_time:.1f}s", True, (255, 255, 255))
-            time_rect = time_text.get_rect(center=(self.width // 2, self.height // 2 - 20))
+            time_rect = time_text.get_rect(center=(self.width // 2, self.height // 2 - 60))
             self.screen.blit(time_text, time_rect)
+            
+            if self.trap_bonus > 0:
+                trap_text = small_font.render(f"Bonus por trampas: +{self.trap_bonus}", True, (0, 255, 0))
+                trap_rect = trap_text.get_rect(center=(self.width // 2, self.height // 2 - 20))
+                self.screen.blit(trap_text, trap_rect)
             
             score_text = subtitle_font.render(f"Puntuación: {self.final_score}", True, (255, 215, 0))
             score_rect = score_text.get_rect(center=(self.width // 2, self.height // 2 + 20))
@@ -904,8 +915,11 @@ class GameWindow:
     def calculate_score(self):
         if self.modo == 'modo_escapa':
             intervals = int(self.game_time / 5.0)
-            score = 1000 - (intervals * 100)
-            return max(score, 0)
+            time_score = 1000 - (intervals * 100)
+            time_score = max(time_score, 0)
+            # Añadir bonificación por enemigos atrapados
+            total_score = time_score + self.trap_bonus
+            return total_score
         elif self.modo == 'modo_cazador':
             # Puntuación comienza en 0
             base_score = 0
@@ -1027,11 +1041,15 @@ class GameWindow:
                             self.defeat_sound.play()
                     if self.check_win_condition():
                         self.game_won = True
+                        self.final_score = self.calculate_score()
                         if self.victory_sound:
                             self.victory_sound.play()
                     
                     # Verificar trampas
                     self.check_trampa_colision()
+                    
+                    # Verificar cola de respawn de enemigos
+                    self.check_enemy_respawn()
                 
                 elif self.modo == 'modo_cazador':
                     # Modo Cazador: eliminas enemigos al tocarlos
@@ -1228,8 +1246,29 @@ class GameWindow:
         for i in sorted(enemigos_a_eliminar, reverse=True):
             del self.enemigos[i]
             self.enemigos_eliminados += 1
+            
+            # Añadir bonificación de +50 puntos
+            self.trap_bonus += 50
+            
+            # Programar respawn del enemigo en 10 segundos
+            respawn_time = self.game_time + 10.0
+            self.enemigos_respawn_queue.append(respawn_time)
+            
             if self.death_sound:
                 self.death_sound.play()
+    
+    def check_enemy_respawn(self):
+        """Verificar si es momento de hacer respawn de enemigos atrapados (solo modo Escapa)"""
+        # Revisar la cola de respawn
+        enemigos_a_respawnear = []
+        for i, respawn_time in enumerate(self.enemigos_respawn_queue):
+            if self.game_time >= respawn_time:
+                enemigos_a_respawnear.append(i)
+        
+        # Respawnear enemigos
+        for i in sorted(enemigos_a_respawnear, reverse=True):
+            del self.enemigos_respawn_queue[i]
+            self.spawn_nuevo_enemigo()
 
     #E: None
     #S: int or None
