@@ -231,6 +231,138 @@ class GeneradorMapa:
         # convertir algunos CAMINO en obstáculos (lianas/túneles/muros) sin romper conectividad
         self._convertir_caminos_a_obstaculos()
 
+    def obtener_todas_celdas_transitables(self, tipos_permitidos):
+        """Retorna lista de todas las celdas que son de los tipos permitidos."""
+        celdas = []
+        for fila in range(self.filas):
+            for columna in range(self.columnas):
+                if self.matriz[fila][columna] in tipos_permitidos:
+                    celdas.append((fila, columna))
+        return celdas
+
+    def obtener_componentes_conexas(self, tipos_permitidos):
+        """Retorna lista de componentes conexas (grupos de celdas conectadas)."""
+        visitados = [[False for _ in range(self.columnas)] for _ in range(self.filas)]
+        componentes = []
+
+        for fila in range(self.filas):
+            for columna in range(self.columnas):
+                if not visitados[fila][columna] and self.matriz[fila][columna] in tipos_permitidos:
+                    # BFS para encontrar toda la componente conexa
+                    componente = []
+                    cola = [(fila, columna)]
+                    visitados[fila][columna] = True
+                    indice = 0
+
+                    while indice < len(cola):
+                        f, c = cola[indice]
+                        indice += 1
+                        componente.append((f, c))
+
+                        for nf, nc in self.obtener_vecinos_4_direcciones(f, c):
+                            if not visitados[nf][nc] and self.matriz[nf][nc] in tipos_permitidos:
+                                visitados[nf][nc] = True
+                                cola.append((nf, nc))
+
+                    componentes.append(componente)
+
+        return componentes
+
+    def conectar_componentes(self, componentes, tipos_permitidos):
+        """Conecta todas las componentes conexas usando CAMINO para que ambas entidades puedan pasar."""
+        if len(componentes) <= 1:
+            return
+
+        # Conectar cada componente a la que contiene el inicio
+        componente_principal = None
+        for comp in componentes:
+            if self.inicio in comp:
+                componente_principal = comp
+                break
+
+        if componente_principal is None:
+            componente_principal = componentes[0]
+
+        for comp in componentes:
+            if comp == componente_principal:
+                continue
+
+            # Buscar el punto más cercano entre esta componente y la principal
+            min_dist = float('inf')
+            mejor_origen = None
+            mejor_destino = None
+
+            for celda_comp in comp:
+                for celda_principal in componente_principal:
+                    dist = abs(celda_comp[0] - celda_principal[0]) + abs(celda_comp[1] - celda_principal[1])
+                    if dist < min_dist:
+                        min_dist = dist
+                        mejor_origen = celda_principal
+                        mejor_destino = celda_comp
+
+            # Conectar usando CAMINO para que jugador y enemigos puedan usar el camino
+            if mejor_origen and mejor_destino:
+                self.conectar_ignorando_tipos_con_camino(mejor_origen, mejor_destino)
+
+    def conectar_ignorando_tipos_con_camino(self, origen, destino):
+        """Similar a conectar_ignorando_tipos pero siempre usa CAMINO (no TUNEL)."""
+        visitados = [[False for _ in range(self.columnas)] for _ in range(self.filas)]
+        padres = [[None for _ in range(self.columnas)] for _ in range(self.filas)]
+
+        cola = [origen]
+        indice_lectura = 0
+        fr, fc = origen
+        visitados[fr][fc] = True
+        padres[fr][fc] = None
+
+        encontrado = False
+        while indice_lectura < len(cola):
+            fila, columna = cola[indice_lectura]
+            indice_lectura += 1
+
+            if (fila, columna) == destino:
+                encontrado = True
+                break
+
+            for nueva_fila, nueva_columna in self.obtener_vecinos_4_direcciones(fila, columna):
+                if not visitados[nueva_fila][nueva_columna]:
+                    visitados[nueva_fila][nueva_columna] = True
+                    padres[nueva_fila][nueva_columna] = (fila, columna)
+                    cola.append((nueva_fila, nueva_columna))
+
+        actual = destino
+        ar, ac = actual
+        if not encontrado and actual != origen and padres[ar][ac] is None:
+            return
+
+        # Tallar con CAMINO en lugar de mezclar con TUNEL
+        while actual is not None:
+            fila, columna = actual
+            # Solo usar CAMINO para que enemigos también puedan pasar
+            if (fila, columna) not in self.salidas:  # No modificar las salidas
+                self.matriz[fila][columna] = CAMINO
+            pr = padres[fila][columna]
+            actual = pr
+
+    def validar_conectividad_completa(self):
+        """Valida que todas las celdas transitables estén conectadas para jugador y enemigos."""
+        # Validar para el jugador (CAMINO + TUNEL)
+        componentes_jugador = self.obtener_componentes_conexas({CAMINO, TUNEL})
+        if len(componentes_jugador) > 1:
+            self.conectar_componentes(componentes_jugador, {CAMINO, TUNEL})
+
+        # Validar para enemigos (solo CAMINO)
+        componentes_enemigos = self.obtener_componentes_conexas({CAMINO})
+        if len(componentes_enemigos) > 1:
+            self.conectar_componentes(componentes_enemigos, {CAMINO})
+
+        # Verificar que inicio y todas las salidas estén en la componente principal
+        for salida in self.salidas:
+            if self.buscar_camino(self.inicio, salida, {CAMINO, TUNEL}) is None:
+                self.conectar_ignorando_tipos_con_camino(self.inicio, salida)
+            if self.buscar_camino(self.inicio, salida, {CAMINO}) is None:
+                self.conectar_ignorando_tipos_con_camino(self.inicio, salida)
+
     def _convertir_caminos_a_obstaculos(self):
         """Convierte un porcentaje de CAMINO en lianas, túneles o muros, evitando inicio y salidas."""
         
@@ -266,20 +398,27 @@ class GeneradorMapa:
                     vecinos_transitables += 1
             
             # solo convertir si tiene más de 2 vecinos transitables (no es cuello de botella)
-            # o si al convertir no se rompe la conexión a la salida
             if vecinos_transitables > 2:
                 tipo_nuevo = random.choice(tipos_obstaculo)
                 valor_original = self.matriz[x][y]
                 self.matriz[x][y] = tipo_nuevo
                 
-                # verificar que sigue existiendo camino a la(s) salida(s)
-                camino_valido = True
+                # verificar que sigue existiendo camino tanto para jugador como para enemigos
+                camino_valido_jugador = True
+                camino_valido_enemigos = True
+                
                 for salida in self.salidas:
+                    # Validar camino para jugador (CAMINO + TUNEL)
                     if self.buscar_camino(self.inicio, salida, {CAMINO, TUNEL}) is None:
-                        camino_valido = False
+                        camino_valido_jugador = False
+                        break
+                    # Validar camino para enemigos (solo CAMINO)
+                    if self.buscar_camino(self.inicio, salida, {CAMINO}) is None:
+                        camino_valido_enemigos = False
                         break
                 
-                if camino_valido:
+                # Solo mantener la conversión si ambos tipos de entidades mantienen conectividad
+                if camino_valido_jugador and camino_valido_enemigos:
                     convertidos += 1
                 else:
                     # revertir conversión si rompió la conectividad
@@ -322,6 +461,9 @@ class GeneradorMapa:
         # 6) rellenar el resto del mapa con mezcla aleatoria
         self.rellenar_mapa_aleatorio()
 
+        # 6.5) validar conectividad completa para jugador y enemigos
+        self.validar_conectividad_completa()
+
         # 7) validación final de la salida principal
         if self.buscar_camino(self.inicio, salida_principal, {CAMINO, TUNEL}) is None:
             self.conectar_ignorando_tipos(self.inicio, salida_principal)
@@ -340,6 +482,11 @@ class GeneradorMapa:
                     if not es_borde_v:
                         self.matriz[vx][vy] = CAMINO
                         break
+
+        # 8.5) validación final de conectividad para enemigos
+        for salida in self.salidas:
+            if self.buscar_camino(self.inicio, salida, {CAMINO}) is None:
+                self.conectar_ignorando_tipos_con_camino(self.inicio, salida)
 
         return self._convertir_a_terrenos(), self.inicio, self.salidas
     
