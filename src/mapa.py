@@ -23,29 +23,28 @@ class GeneradorMapa:
         self.matriz = [[MURO for _ in range(self.columnas)] for _ in range(self.filas)]
         self.salidas = []
 
-    # ----------------- utilidades internas -----------------
+    # retorna vecinos en 4 direcciones (arriba, abajo, izquierda, derecha)
     def obtener_vecinos_4_direcciones(self, fila, columna):
-        
         for delta_fila, delta_columna in ((1,0), (-1,0), (0,1), (0,-1)):
             nueva_fila, nueva_columna = fila + delta_fila, columna + delta_columna
-            if 0 <= nueva_fila < self.filas and 0 <= nueva_columna < self.columnas:
-                yield nueva_fila, nueva_columna
+            if 0 <= nueva_fila < self.filas and 0 <= nueva_columna < self.columnas: yield nueva_fila, nueva_columna
 
+    # obtener todas las coordenadas del borde del mapa
     def obtener_coordenadas_borde(self):
-        
         coordenadas = []
+
         # superior e inferior (excluye esquinas si se pide)
         for columna in range(self.columnas):
-            if self.excluir_salidas_esquinas and (columna in (0, self.columnas-1)):
-                continue
+            if self.excluir_salidas_esquinas and (columna in (0, self.columnas-1)): continue
             coordenadas.append((0, columna))
             coordenadas.append((self.filas-1, columna))
+
         # izquierda y derecha
         for fila in range(self.filas):
-            if self.excluir_salidas_esquinas and (fila in (0, self.filas-1)):
-                continue
+            if self.excluir_salidas_esquinas and (fila in (0, self.filas-1)): continue
             coordenadas.append((fila, 0))
             coordenadas.append((fila, self.columnas-1))
+
         # quitar duplicados (en caso de filas/columnas pequeñas)
         coordenadas_unicas = []
         ya_vistas = []
@@ -55,8 +54,8 @@ class GeneradorMapa:
                 ya_vistas.append(coord)
         return coordenadas_unicas
 
+    # elegir y abrir salidas en el borde del mapa
     def elegir_salidas(self):
-
         borde = self.obtener_coordenadas_borde()
         random.shuffle(borde)
         elegidas = borde[:self.numero_salidas] if len(borde) >= self.numero_salidas else borde
@@ -72,8 +71,8 @@ class GeneradorMapa:
                     self.matriz[vecino_x][vecino_y] = CAMINO
                     break  # solo necesitamos asegurar un vecino como camino
 
+    # BFS para encontrar camino entre origen y destino usando solo tipos permitidos
     def buscar_camino(self, origen, destino, tipos_permitidos):
-        
         # matriz de visitados y padres (None = sin padre)
         visitados = [[False for _ in range(self.columnas)] for _ in range(self.filas)]
         padres = [[None for _ in range(self.columnas)] for _ in range(self.filas)]
@@ -106,8 +105,8 @@ class GeneradorMapa:
                     cola.append((nueva_fila, nueva_columna))
         return None
 
+    # BFS para conectar origen y destino ignorando tipos (usa CAMINO y TUNEL)
     def conectar_ignorando_tipos(self, origen, destino):
-        
         # matriz de visitados y padres
         visitados = [[False for _ in range(self.columnas)] for _ in range(self.filas)]
         padres = [[None for _ in range(self.columnas)] for _ in range(self.filas)]
@@ -136,8 +135,7 @@ class GeneradorMapa:
         # reconstruir y tallar el camino sólo si destino fue alcanzado (o es el origen)
         actual = destino
         ar, ac = actual
-        if not encontrado and actual != origen and padres[ar][ac] is None:
-            return  # no hay camino encontrado; no se modifica el mapa
+        if not encontrado and actual != origen and padres[ar][ac] is None: return  # no hay camino encontrado; no se modifica el mapa
 
         while actual is not None:
             fila, columna = actual
@@ -145,29 +143,24 @@ class GeneradorMapa:
             pr = padres[fila][columna]
             actual = pr
 
+    # tallar camino aleatorio entre origen y destino
     def tallar_camino_aleatorio(self, origen, destino):
-
         pila = [origen]
         visitados = [] 
 
         while pila:
             fila, columna = pila.pop()
-            if (fila, columna) in visitados:
-                continue
+            if (fila, columna) in visitados: continue
             visitados.append((fila, columna))
 
             # el inicio siempre es camino
-            if (fila, columna) == origen:
-                self.matriz[fila][columna] = CAMINO
-            elif (fila, columna) == destino:
-                # asegurar que la salida sea siempre CAMINO (nunca TUNEL)
-                self.matriz[fila][columna] = CAMINO
-            else:
-                # decidir aleatoriamente si es túnel o camino
-                self.matriz[fila][columna] = TUNEL if random.random() < self.probabilidad_tunel_en_camino else CAMINO
+            if (fila, columna) == origen: self.matriz[fila][columna] = CAMINO
+            # asegurar que la salida sea siempre CAMINO (nunca TUNEL
+            elif (fila, columna) == destino: self.matriz[fila][columna] = CAMINO
+            # decidir aleatoriamente si es túnel o camino
+            else: self.matriz[fila][columna] = TUNEL if random.random() < self.probabilidad_tunel_en_camino else CAMINO
 
-            if (fila, columna) == destino:
-                return True
+            if (fila, columna) == destino: return True
 
             vecinos = list(self.obtener_vecinos_4_direcciones(fila, columna))
             random.shuffle(vecinos)
@@ -175,22 +168,19 @@ class GeneradorMapa:
             for nueva_fila, nueva_columna in vecinos:
                 # impedir tocar el borde excepto la celda de salida
                 es_borde = (nueva_fila in (0, self.filas-1)) or (nueva_columna in (0, self.columnas-1))
-                if es_borde and (nueva_fila, nueva_columna) != destino:
-                    continue
-                if (nueva_fila, nueva_columna) not in visitados:
-                    pila.append((nueva_fila, nueva_columna))
+                if es_borde and (nueva_fila, nueva_columna) != destino: continue
+                if (nueva_fila, nueva_columna) not in visitados: pila.append((nueva_fila, nueva_columna))
         return False
 
+    # rellenar el mapa con mezcla aleatoria según probabilidades
     def rellenar_mapa_aleatorio(self):
         
         # normalizar probabilidades para evitar que sumas != 1 hagan inalcanzable alguna opción
         probs = [self.prob_muro, self.prob_camino, self.prob_liana, self.prob_tunel]
         total = sum(probs)
-        if total <= 0:
-            # valores por defecto si la suma es 0 o negativa
-            p_muro, p_camino, p_liana, p_tunel = 0.40, 0.15, 0.25, 0.20
-        else:
-            p_muro, p_camino, p_liana, p_tunel = (p / total for p in probs)
+        # valores por defecto si la suma es 0 o negativa
+        if total <= 0: p_muro, p_camino, p_liana, p_tunel = 0.40, 0.15, 0.25, 0.20
+        else: p_muro, p_camino, p_liana, p_tunel = (p / total for p in probs)
 
         umbral_muro = p_muro
         umbral_camino = umbral_muro + p_camino
@@ -202,8 +192,7 @@ class GeneradorMapa:
         for sx, sy in self.salidas:
             for vx, vy in self.obtener_vecinos_4_direcciones(sx, sy):
                 es_borde_v = (vx in (0, self.filas-1)) or (vy in (0, self.columnas-1))
-                if not es_borde_v:
-                    vecinos_salidas.add((vx, vy))
+                if not es_borde_v: vecinos_salidas.add((vx, vy))
 
         for fila in range(self.filas):
             for columna in range(self.columnas):
@@ -214,34 +203,28 @@ class GeneradorMapa:
                     continue
 
                 # no tocar inicio, salidas, vecinos de salidas ni celdas ya talladas como CAMINO/TUNEL
-                if (fila, columna) == self.inicio or (fila, columna) in self.salidas or (fila, columna) in vecinos_salidas or self.matriz[fila][columna] in (CAMINO, TUNEL):
-                    continue
+                if (fila, columna) == self.inicio or (fila, columna) in self.salidas or (fila, columna) in vecinos_salidas or self.matriz[fila][columna] in (CAMINO, TUNEL): continue
 
                 # asignar tipo aleatorio según probabilidades normalizadas
                 valor_aleatorio = random.random()
-                if valor_aleatorio < umbral_muro:
-                    self.matriz[fila][columna] = MURO
-                elif valor_aleatorio < umbral_camino:
-                    self.matriz[fila][columna] = CAMINO
-                elif valor_aleatorio < umbral_liana:
-                    self.matriz[fila][columna] = LIANA
-                else:
-                    self.matriz[fila][columna] = TUNEL
+                if valor_aleatorio < umbral_muro: self.matriz[fila][columna] = MURO
+                elif valor_aleatorio < umbral_camino: self.matriz[fila][columna] = CAMINO
+                elif valor_aleatorio < umbral_liana: self.matriz[fila][columna] = LIANA
+                else: self.matriz[fila][columna] = TUNEL
 
         # convertir algunos CAMINO en obstáculos (lianas/túneles/muros) sin romper conectividad
         self._convertir_caminos_a_obstaculos()
 
+    # obtener todas las celdas transitables de tipos permitidos
     def obtener_todas_celdas_transitables(self, tipos_permitidos):
-        """Retorna lista de todas las celdas que son de los tipos permitidos."""
         celdas = []
         for fila in range(self.filas):
             for columna in range(self.columnas):
-                if self.matriz[fila][columna] in tipos_permitidos:
-                    celdas.append((fila, columna))
+                if self.matriz[fila][columna] in tipos_permitidos: celdas.append((fila, columna))
         return celdas
 
+    # obtener componentes conexas de tipos permitidos
     def obtener_componentes_conexas(self, tipos_permitidos):
-        """Retorna lista de componentes conexas (grupos de celdas conectadas)."""
         visitados = [[False for _ in range(self.columnas)] for _ in range(self.filas)]
         componentes = []
 
@@ -268,10 +251,9 @@ class GeneradorMapa:
 
         return componentes
 
+    # conectar todas las componentes conexas usando CAMINO
     def conectar_componentes(self, componentes, tipos_permitidos):
-        """Conecta todas las componentes conexas usando CAMINO para que ambas entidades puedan pasar."""
-        if len(componentes) <= 1:
-            return
+        if len(componentes) <= 1: return
 
         # Conectar cada componente a la que contiene el inicio
         componente_principal = None
@@ -280,12 +262,10 @@ class GeneradorMapa:
                 componente_principal = comp
                 break
 
-        if componente_principal is None:
-            componente_principal = componentes[0]
+        if componente_principal is None: componente_principal = componentes[0]
 
         for comp in componentes:
-            if comp == componente_principal:
-                continue
+            if comp == componente_principal: continue
 
             # Buscar el punto más cercano entre esta componente y la principal
             min_dist = float('inf')
@@ -304,8 +284,8 @@ class GeneradorMapa:
             if mejor_origen and mejor_destino:
                 self.conectar_ignorando_tipos_con_camino(mejor_origen, mejor_destino)
 
+    # conectar ignorando tipos pero usando solo CAMINO
     def conectar_ignorando_tipos_con_camino(self, origen, destino):
-        """Similar a conectar_ignorando_tipos pero siempre usa CAMINO (no TUNEL)."""
         visitados = [[False for _ in range(self.columnas)] for _ in range(self.filas)]
         padres = [[None for _ in range(self.columnas)] for _ in range(self.filas)]
 
@@ -332,39 +312,34 @@ class GeneradorMapa:
 
         actual = destino
         ar, ac = actual
-        if not encontrado and actual != origen and padres[ar][ac] is None:
-            return
+        if not encontrado and actual != origen and padres[ar][ac] is None: return
 
         # Tallar con CAMINO en lugar de mezclar con TUNEL
         while actual is not None:
             fila, columna = actual
             # Solo usar CAMINO para que enemigos también puedan pasar
-            if (fila, columna) not in self.salidas:  # No modificar las salidas
-                self.matriz[fila][columna] = CAMINO
+              # No modificar las salidas
+            if (fila, columna) not in self.salidas: self.matriz[fila][columna] = CAMINO
             pr = padres[fila][columna]
             actual = pr
 
+    # validar que todas las celdas transitables estén conectadas
     def validar_conectividad_completa(self):
-        """Valida que todas las celdas transitables estén conectadas para jugador y enemigos."""
         # Validar para el jugador (CAMINO + TUNEL)
         componentes_jugador = self.obtener_componentes_conexas({CAMINO, TUNEL})
-        if len(componentes_jugador) > 1:
-            self.conectar_componentes(componentes_jugador, {CAMINO, TUNEL})
+        if len(componentes_jugador) > 1: self.conectar_componentes(componentes_jugador, {CAMINO, TUNEL})
 
         # Validar para enemigos (solo CAMINO)
         componentes_enemigos = self.obtener_componentes_conexas({CAMINO})
-        if len(componentes_enemigos) > 1:
-            self.conectar_componentes(componentes_enemigos, {CAMINO})
+        if len(componentes_enemigos) > 1: self.conectar_componentes(componentes_enemigos, {CAMINO})
 
         # Verificar que inicio y todas las salidas estén en la componente principal
         for salida in self.salidas:
-            if self.buscar_camino(self.inicio, salida, {CAMINO, TUNEL}) is None:
-                self.conectar_ignorando_tipos_con_camino(self.inicio, salida)
-            if self.buscar_camino(self.inicio, salida, {CAMINO}) is None:
-                self.conectar_ignorando_tipos_con_camino(self.inicio, salida)
+            if self.buscar_camino(self.inicio, salida, {CAMINO, TUNEL}) is None: self.conectar_ignorando_tipos_con_camino(self.inicio, salida)
+            if self.buscar_camino(self.inicio, salida, {CAMINO}) is None: self.conectar_ignorando_tipos_con_camino(self.inicio, salida)
 
+    # convertir un porcentaje de CAMINO en obstáculos sin romper conectividad
     def _convertir_caminos_a_obstaculos(self):
-        """Convierte un porcentaje de CAMINO en lianas, túneles o muros, evitando inicio y salidas."""
         
         # recolectar vecinos interiores de salidas para no convertirlos
         vecinos_salidas = set()
@@ -378,8 +353,7 @@ class GeneradorMapa:
         for x in range(self.filas):
             for y in range(self.columnas):
                 # excluir inicio, salidas y vecinos inmediatos de salidas
-                if self.matriz[x][y] == CAMINO and (x, y) != self.inicio and (x, y) not in self.salidas and (x, y) not in vecinos_salidas:
-                    candidatos.append((x, y))
+                if self.matriz[x][y] == CAMINO and (x, y) != self.inicio and (x, y) not in self.salidas and (x, y) not in vecinos_salidas: candidatos.append((x, y))
 
         # barajar y tomar porcentaje para convertir
         random.shuffle(candidatos)
@@ -428,27 +402,24 @@ class GeneradorMapa:
             if convertidos >= num_convertir:
                 break
 
-    # ----------------- API principal -----------------
+    # generar el mapa completo, the main attraction
     def generar(self):
         
         # 1) limpiar todo a MURO
         for fila in range(self.filas):
-            for columna in range(self.columnas):
-                self.matriz[fila][columna] = MURO
+            for columna in range(self.columnas): self.matriz[fila][columna] = MURO
 
         # 3) elegir y abrir salidas
         self.elegir_salidas()
         # asegurar que exista una salida principal antes de usarla
-        if not self.salidas:
-            self.elegir_salidas()
+        if not self.salidas: self.elegir_salidas()
         salida_principal = self.salidas[0]
 
        
         tallado_exitoso = self.tallar_camino_aleatorio(self.inicio, salida_principal)
         
         # si no talló correctamente, conectar ignorando tipos
-        if not tallado_exitoso or self.buscar_camino(self.inicio, salida_principal, {CAMINO, TUNEL}) is None:
-            self.conectar_ignorando_tipos(self.inicio, salida_principal)
+        if not tallado_exitoso or self.buscar_camino(self.inicio, salida_principal, {CAMINO, TUNEL}) is None: self.conectar_ignorando_tipos(self.inicio, salida_principal)
 
         # 5) opcional: conectar a todas las salidas restantes
         if self.conectar_todas_salidas and len(self.salidas) > 1:
@@ -485,8 +456,7 @@ class GeneradorMapa:
 
         # 8.5) validación final de conectividad para enemigos
         for salida in self.salidas:
-            if self.buscar_camino(self.inicio, salida, {CAMINO}) is None:
-                self.conectar_ignorando_tipos_con_camino(self.inicio, salida)
+            if self.buscar_camino(self.inicio, salida, {CAMINO}) is None: self.conectar_ignorando_tipos_con_camino(self.inicio, salida)
 
         return self._convertir_a_terrenos(), self.inicio, self.salidas
     
@@ -498,16 +468,11 @@ class GeneradorMapa:
             fila_terrenos = []
             for col_idx in range(self.columnas):
                 celda = self.matriz[fila_idx][col_idx]
-                if celda == CAMINO:
-                    terreno = Camino(fila_idx, col_idx)
-                elif celda == MURO:
-                    terreno = Muro(fila_idx, col_idx)
-                elif celda == LIANA:
-                    terreno = Liana(fila_idx, col_idx)
-                elif celda == TUNEL:
-                    terreno = Tunel(fila_idx, col_idx)
-                else:
-                    terreno = Muro(fila_idx, col_idx)
+                if celda == CAMINO: terreno = Camino(fila_idx, col_idx)
+                elif celda == MURO: terreno = Muro(fila_idx, col_idx)
+                elif celda == LIANA: terreno = Liana(fila_idx, col_idx)
+                elif celda == TUNEL: terreno = Tunel(fila_idx, col_idx)
+                else: terreno = Muro(fila_idx, col_idx)
                 fila_terrenos.append(terreno)
             mapa_terrenos.append(fila_terrenos)
         return mapa_terrenos

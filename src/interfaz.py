@@ -1,12 +1,12 @@
 import pygame
 import sys
+import random
 from src.jugador import Jugador
 from src.terreno import Camino, Muro, Liana, Tunel
 
 from src.enemigo import Enemigo
 
 # class for text input field
-
 class InputBox:
     def __init__(self, x, y, width, height, font, text=''):
         self.rect = pygame.Rect(x, y, width, height)
@@ -22,18 +22,14 @@ class InputBox:
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             # Toggle active state if user clicked on the input box
-            if self.rect.collidepoint(event.pos):
-                self.active = not self.active
-            else:
-                self.active = False
+            if self.rect.collidepoint(event.pos): self.active = not self.active
+            else: self.active = False
             self.color = self.color_active if self.active else self.color_inactive
             
         if event.type == pygame.KEYDOWN:
             if self.active:
-                if event.key == pygame.K_RETURN:
-                    return 'submit'
-                elif event.key == pygame.K_BACKSPACE:
-                    self.text = self.text[:-1]
+                if event.key == pygame.K_RETURN: return 'submit'
+                elif event.key == pygame.K_BACKSPACE: self.text = self.text[:-1]
                 else:
                     # Limitar longitud del nombre a 15 caracteres
                     if len(self.text) < 15:
@@ -49,11 +45,9 @@ class InputBox:
         # Draw the text
         screen.blit(self.txt_surface, (self.rect.x + 10, self.rect.y + 10))
         
-    def get_text(self):
-        return self.text.strip()
+    def get_text(self): return self.text.strip()
 
 # class for making button
-
 class Button:
     def __init__(self, x, y, width, height, text, action, color, text_color=(255, 255, 255)):
         self.rect = pygame.Rect(x, y, width, height)
@@ -73,7 +67,6 @@ class Button:
     def is_clicked(self, mouse_pos, mouse_click): return self.rect.collidepoint(mouse_pos) and mouse_click
 
 # class for the main menu itself
-
 class MainMenu:
     def __init__(self, width, height):
         pygame.init()
@@ -91,11 +84,11 @@ class MainMenu:
         self.TEXT_COLOR = (218, 215, 205)  # #dad7cd
         self.BORDER_COLOR = (163, 177, 138)  # #a3b18a
         
-        # set fonts dynamically based on resolution
+        # set fonts 
         self.title_font = pygame.font.Font(None, int(height * 0.133))
         self.button_font = pygame.font.Font(None, int(height * 0.067))
         
-        # create buttons dynamically based on resolution
+        # create buttons dimensionally
         button_width = int(width * 0.5)
         button_height = int(height * 0.08) 
         button_x = (width - button_width) // 2
@@ -114,9 +107,9 @@ class MainMenu:
         
         self.running = True
         self.selected_option = None
-        
+    
+    # draw main menu on the screen
     def draw(self):
-        # draw background and title
         self.screen.fill(self.BG_COLOR)
         
         title_surface = self.title_font.render("Escapa del Laberinto", True, self.TITLE_COLOR)
@@ -126,7 +119,8 @@ class MainMenu:
         for button in self.buttons: button.draw(self.screen, self.button_font)
             
         pygame.display.flip()
-        
+    
+    # handle interactions with the menu
     def interactions(self):
         mouse_pos = pygame.mouse.get_pos()
         mouse_click = False
@@ -144,9 +138,9 @@ class MainMenu:
                 if button.is_clicked(mouse_pos, mouse_click):
                     self.selected_option = button.action
                     if button.action == 'salir': self.running = False
-                        
+
+    # main loop for window      
     def run(self):
-        # main loopsies
         while self.running:
             self.interactions()
             self.draw()
@@ -158,7 +152,6 @@ class MainMenu:
         return self.selected_option
     
 # class for player tracking
-
 class PlayerRegistration:
     def __init__(self, width, height):
         pygame.init()
@@ -168,7 +161,7 @@ class PlayerRegistration:
         pygame.display.set_caption("Registro de Jugador")
         self.clock = pygame.time.Clock()
         
-        # Colors - same earthy palette
+        # Colors
         self.BG_COLOR = (52, 78, 65)
         self.TITLE_COLOR = (218, 215, 205)
         self.BUTTON_COLOR = (88, 129, 87)
@@ -195,7 +188,8 @@ class PlayerRegistration:
         
         self.running = True
         self.player_name = None
-        
+    
+    # draw the registration screen
     def draw(self):
         self.screen.fill(self.BG_COLOR)
         
@@ -216,7 +210,8 @@ class PlayerRegistration:
         self.continue_button.draw(self.screen, self.button_font)
         
         pygame.display.flip()
-        
+    
+    # handle interactions wit the registration screen
     def interactions(self):
         mouse_pos = pygame.mouse.get_pos()
         mouse_click = False
@@ -239,7 +234,8 @@ class PlayerRegistration:
             if self.input_box.get_text():
                 self.player_name = self.input_box.get_text()
                 self.running = False
-                
+
+    # main loop for registration window        
     def run(self):
         while self.running:
             self.interactions()
@@ -249,7 +245,6 @@ class PlayerRegistration:
         return self.player_name
 
 # class for leaderboard display
-
 class Leaderboard:
     def __init__(self, width, height, score_manager):
         pygame.init()
@@ -282,6 +277,7 @@ class Leaderboard:
         
         self.running = True
         
+    # draw the leaderboard screen
     def draw(self):
         self.screen.fill(self.BG_COLOR)
         
@@ -326,25 +322,23 @@ class Leaderboard:
                 score_surface = self.text_font.render(score_text, True, self.TEXT_COLOR)
                 score_rect = score_surface.get_rect(center=(x_offset + width // 2, start_y + (i + 1) * spacing))
                 self.screen.blit(score_surface, score_rect)
-                
+
+    # handle interactions with the leaderboard screen     
     def interactions(self):
         mouse_pos = pygame.mouse.get_pos()
         mouse_click = False
         
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
+            if event.type == pygame.QUIT: self.running = False
                 
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                mouse_click = True
+            if event.type == pygame.MOUSEBUTTONDOWN: mouse_click = True
                 
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                self.running = False
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE: self.running = False
                 
         # Check back button click
-        if mouse_click and self.back_button.is_clicked(mouse_pos, mouse_click):
-            self.running = False
-            
+        if mouse_click and self.back_button.is_clicked(mouse_pos, mouse_click): self.running = False
+
+    # main loop for leaderboard window    
     def run(self):
         while self.running:
             self.interactions()
@@ -352,7 +346,6 @@ class Leaderboard:
             self.clock.tick(60)
 
 # class for difficulty selection
-
 class DifficultySelection:
     def __init__(self, width, height):
         pygame.init()
@@ -362,7 +355,7 @@ class DifficultySelection:
         pygame.display.set_caption("Selección de Dificultad")
         self.clock = pygame.time.Clock()
         
-        # Colors - same earthy palette
+        # Colors
         self.BG_COLOR = (52, 78, 65)
         self.TITLE_COLOR = (218, 215, 205)
         self.BUTTON_COLOR = (88, 129, 87)
@@ -389,15 +382,16 @@ class DifficultySelection:
         ]
         
         # Difficulty descriptions
-        self.descriptions = {
-            "facil": "Enemigos lentos - Ideal para principiantes",
-            "normal": "Velocidad estándar - Desafío equilibrado",
-            "dificil": "Enemigos rápidos - Solo para expertos"
-        }
+        self.descriptions = [
+            "Enemigos lentos - Ideal para principiantes",  # facil
+            "Velocidad estándar - Desafío equilibrado",    # normal
+            "Enemigos rápidos - Solo para expertos"        # dificil
+        ]
         
         self.running = True
         self.selected_difficulty = None
-        
+
+    # draw the difficulty selection screen   
     def draw(self):
         self.screen.fill(self.BG_COLOR)
         
@@ -412,7 +406,7 @@ class DifficultySelection:
             
             # Show description on hover
             if button.rect.collidepoint(mouse_pos):
-                desc_text = self.desc_font.render(self.descriptions[button.action], True, self.TEXT_COLOR)
+                desc_text = self.desc_font.render(self.descriptions[i], True, self.TEXT_COLOR)
                 desc_rect = desc_text.get_rect(center=(self.width // 2, button.rect.bottom + 25))
                 self.screen.blit(desc_text, desc_rect)
         
@@ -420,7 +414,8 @@ class DifficultySelection:
         self.buttons[-1].draw(self.screen, self.button_font)
         
         pygame.display.flip()
-        
+    
+    # handle interactions with the difficulty selection screen
     def interactions(self):
         mouse_pos = pygame.mouse.get_pos()
         mouse_click = False
@@ -430,8 +425,7 @@ class DifficultySelection:
                 self.running = False
                 self.selected_difficulty = None
                 
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                mouse_click = True
+            if event.type == pygame.MOUSEBUTTONDOWN: mouse_click = True
                 
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.running = False
@@ -446,7 +440,8 @@ class DifficultySelection:
                     else:
                         self.selected_difficulty = button.action
                         self.running = False
-                        
+
+    # main loop for difficulty selection window              
     def run(self):
         while self.running:
             self.interactions()
@@ -456,7 +451,6 @@ class DifficultySelection:
         return self.selected_difficulty
 
 # class for how to play screen
-
 class HowToPlay:
     def __init__(self, width, height):
         pygame.init()
@@ -490,7 +484,8 @@ class HowToPlay:
         self.texture_tunel = pygame.transform.scale(pygame.image.load("sprites/background/tunel.png"), (self.tile_size, self.tile_size))
         
         self.running = True
-        
+
+    # draw the how to play screen   
     def draw(self):
         self.screen.fill(self.BG_COLOR)
         
@@ -508,6 +503,7 @@ class HowToPlay:
             "Modo Escapa: Encuentra la salida antes de que te alcance el enemigo(Puedes utilizar trampas para deshacerte de los enemigos)",
             "Modo Cazador: Elimina al enemigo colisionando contra él, evita que llegue a la salida"
         ]
+
         for text in modes_text:
             line = self.text_font.render(text, True, self.TEXT_COLOR)
             self.screen.blit(line, (70, y_pos))
@@ -524,6 +520,7 @@ class HowToPlay:
             "Espacio: Colocar trampa (modo Escapa)",
             "ESC: Salir del juego"
         ]
+
         for text in controls_text:
             line = self.text_font.render(text, True, self.TEXT_COLOR)
             self.screen.blit(line, (70, y_pos))
@@ -565,35 +562,30 @@ class HowToPlay:
         
         self.back_button.draw(self.screen, self.button_font)
         pygame.display.flip()
-        
+
+    # handle interactions with the how to play screen  
     def interactions(self):
         mouse_pos = pygame.mouse.get_pos()
         mouse_click = False
         
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
+            if event.type == pygame.QUIT: self.running = False
                 
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                mouse_click = True
+            if event.type == pygame.MOUSEBUTTONDOWN: mouse_click = True
                 
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                self.running = False
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE: self.running = False
                 
-        if mouse_click and self.back_button.is_clicked(mouse_pos, mouse_click):
-            self.running = False
-            
+        if mouse_click and self.back_button.is_clicked(mouse_pos, mouse_click): self.running = False
+
+    # main loop for how to play window     
     def run(self):
         while self.running:
             self.interactions()
             self.draw()
             self.clock.tick(60)
 
-# class for the game window
-
+# class for the game window - the big boy
 class GameWindow:
-    #E: mapa (list), title (str), width (int), height (int), cell_size (int), player_name (str), inicio (tuple), modo (str), salidas (list of tuples), dificultad (str)
-    #S: GameWindow instance
     def __init__(self, mapa, title, width, height, cell_size, player_name, inicio, modo, salidas, dificultad='normal'):
         pygame.init()
         self.mapa = mapa
@@ -621,16 +613,11 @@ class GameWindow:
         
         # Time limit para Modo Cazador según dificultad
         if modo == 'modo_cazador':
-            if dificultad == 'facil':
-                self.time_limit = 120.0  # 2 minutos
-            elif dificultad == 'normal':
-                self.time_limit = 60.0  # 1 minuto
-            elif dificultad == 'dificil':
-                self.time_limit = 25.0   # 25 segundos
-            else:
-                self.time_limit = 120.0  # default 2 minutos
-        else:
-            self.time_limit = None  # Sin límite en Modo Escapa
+            if dificultad == 'facil': self.time_limit = 120.0  # 2 minutos
+            elif dificultad == 'normal': self.time_limit = 60.0  # 1 minuto
+            elif dificultad == 'dificil': self.time_limit = 25.0   # 25 segundos
+            else: self.time_limit = 120.0  # default 2 minutos
+        else: self.time_limit = None  # Sin límite en Modo Escapa
 
         # Cargar texturas con manejo de errores
         try:
@@ -673,25 +660,17 @@ class GameWindow:
             pygame.draw.circle(self.trap_sprite, (200, 0, 0), (self.cell_size // 2, self.cell_size // 2), self.cell_size // 4)
         
         pygame.mixer.init()
-        try:
-            self.sprint_sound = pygame.mixer.Sound("sounds/sprint.mp3")
-        except:
-            self.sprint_sound = None
+        try: self.sprint_sound = pygame.mixer.Sound("sounds/sprint.mp3")
+        except: self.sprint_sound = None
         
-        try:
-            self.victory_sound = pygame.mixer.Sound("sounds/victory.mp3")
-        except:
-            self.victory_sound = None
+        try: self.victory_sound = pygame.mixer.Sound("sounds/victory.mp3")
+        except: self.victory_sound = None
         
-        try:
-            self.death_sound = pygame.mixer.Sound("sounds/death.mp3")
-        except:
-            self.death_sound = None
+        try: self.death_sound = pygame.mixer.Sound("sounds/death.mp3")
+        except: self.death_sound = None
         
-        try:
-            self.defeat_sound = pygame.mixer.Sound("sounds/defeat.mp3")
-        except:
-            self.defeat_sound = None
+        try: self.defeat_sound = pygame.mixer.Sound("sounds/defeat.mp3")
+        except: self.defeat_sound = None
 
         self.color_bg = (34, 139, 34)
         self.color_grid = (0, 0, 0)
@@ -709,14 +688,10 @@ class GameWindow:
         self.enemigo_move_cooldown = 0
         
         # Ajustar velocidad de enemigos según dificultad
-        if dificultad == 'facil':
-            self.enemigo_move_delay = 0.9  # Más lento
-        elif dificultad == 'normal':
-            self.enemigo_move_delay = 0.6  # Velocidad estándar
-        elif dificultad == 'dificil':
-            self.enemigo_move_delay = 0.3  # Más rápido
-        else:
-            self.enemigo_move_delay = 0.6  # Por defecto
+        if dificultad == 'facil': self.enemigo_move_delay = 0.9  # Más lento
+        elif dificultad == 'normal': self.enemigo_move_delay = 0.6  # Velocidad estándar
+        elif dificultad == 'dificil': self.enemigo_move_delay = 0.3  # Más rápido
+        else: self.enemigo_move_delay = 0.6  # Por defecto
         
         # Variables para trampas (solo modo Escapa)
         self.trampas = []
@@ -743,8 +718,7 @@ class GameWindow:
         self.move_delay = 0.45
         self.sprint_sound_played = False
 
-    #E: None
-    #S: None
+    # draw the grid and terrain
     def draw_grid(self):
         self.screen.fill(self.color_bg)
         for x in range(self.rows):
@@ -753,24 +727,18 @@ class GameWindow:
                 pos_x = self.offset_x + y * self.cell_size
                 pos_y = self.offset_y + x * self.cell_size
                 
-                if isinstance(terreno, Camino):
-                    texture = self.texture_camino
-                elif isinstance(terreno, Muro):
-                    texture = self.texture_muro
-                elif isinstance(terreno, Liana):
-                    texture = self.texture_lianas
-                elif isinstance(terreno, Tunel):
-                    texture = self.texture_tunel
-                else:
-                    texture = self.texture_muro
+                if isinstance(terreno, Camino): texture = self.texture_camino
+                elif isinstance(terreno, Muro): texture = self.texture_muro
+                elif isinstance(terreno, Liana): texture = self.texture_lianas
+                elif isinstance(terreno, Tunel): texture = self.texture_tunel
+                else: texture = self.texture_muro
                 
                 self.screen.blit(texture, (pos_x, pos_y))
                 
                 rect = pygame.Rect(pos_x, pos_y, self.cell_size, self.cell_size)
                 pygame.draw.rect(self.screen, self.color_grid, rect, 1)
     
-    #E: None
-    #S: None
+    # Dibujar jugador
     def draw_player(self):
         player_row, player_col = self.player.posicion
         pos_x = self.offset_x + player_col * self.cell_size
@@ -788,8 +756,7 @@ class GameWindow:
             sprite = enemigo.get_current_sprite()
             self.screen.blit(sprite, (pos_x, pos_y))
 
-    #E: None
-    #S: None
+    # dibujar la interfaz de usuario
     def draw_ui(self):
         ui_x = 10
         ui_y = 10
@@ -850,8 +817,7 @@ class GameWindow:
             score_text = self.font.render(f"Puntos: {current_score}", True, (255, 215, 0))
             self.screen.blit(score_text, (ui_x, enemies_y + 70))
 
-    # ...existing code...
-
+    # draw the win message and final score
     def draw_win_message(self):
         overlay = pygame.Surface((self.width, self.height))
         overlay.set_alpha(180)
@@ -862,10 +828,8 @@ class GameWindow:
         subtitle_font = pygame.font.Font(None, 36)
         small_font = pygame.font.Font(None, 28)
         
-        if self.modo == 'modo_escapa':
-            win_text = win_font.render("¡GANASTE!", True, (255, 215, 0))
-        else:  # modo_cazador
-            win_text = win_font.render("TIEMPO AGOTADO", True, (255, 215, 0))
+        if self.modo == 'modo_escapa': win_text = win_font.render("¡GANASTE!", True, (255, 215, 0))
+        else: win_text = win_font.render("TIEMPO AGOTADO", True, (255, 215, 0))
         
         win_rect = win_text.get_rect(center=(self.width // 2, self.height // 2 - 120))
         self.screen.blit(win_text, win_rect)
@@ -902,6 +866,7 @@ class GameWindow:
             score_text = subtitle_font.render(f"Puntuación: {self.final_score}", True, (255, 215, 0))
             score_rect = score_text.get_rect(center=(self.width // 2, self.height // 2 + 50))
             self.screen.blit(score_text, score_rect)
+
         elif self.modo == 'modo_cazador':
             time_text = subtitle_font.render(f"Tiempo: {self.game_time:.1f}s", True, (255, 255, 255))
             time_rect = time_text.get_rect(center=(self.width // 2, self.height // 2 - 60))
@@ -930,33 +895,31 @@ class GameWindow:
         press_esc_rect = press_esc_text.get_rect(center=(self.width // 2, self.height // 2 + 120))
         self.screen.blit(press_esc_text, press_esc_rect)
 
+    # check if the win condition is met
     def check_win_condition(self):
         if self.modo == 'modo_escapa':
             player_pos = self.player.posicion
-            if player_pos in self.salidas:
-                return True
+            if player_pos in self.salidas: return True
         
-
     def calculate_score(self):
         # Determinar multiplicador según dificultad
-        if self.dificultad == 'facil':
-            multiplier = 1.0
-        elif self.dificultad == 'normal':
-            multiplier = 1.5
-        elif self.dificultad == 'dificil':
-            multiplier = 2.0
-        else:
-            multiplier = 1.0
+        if self.dificultad == 'facil': multiplier = 1.0
+        elif self.dificultad == 'normal': multiplier = 1.5
+        elif self.dificultad == 'dificil': multiplier = 2.0
+        else: multiplier = 1.0
         
         if self.modo == 'modo_escapa':
             intervals = int(self.game_time / 5.0)
             time_score = 1000 - (intervals * 100)
             time_score = max(time_score, 0)
+
             # Añadir bonificación por enemigos atrapados
             total_score = time_score + self.trap_bonus
+
             # Aplicar multiplicador de dificultad
             total_score = int(total_score * multiplier)
             return total_score
+        
         elif self.modo == 'modo_cazador':
             # Puntuación comienza en 0
             base_score = 0
@@ -969,9 +932,6 @@ class GameWindow:
             escape_penalty = self.enemigos_escapados * 100
             self.penalty_score = -escape_penalty
             
-            # Penalización por tiempo (más suave) - solo se aplica al final
-            #time_penalty = int(self.game_time / 5.0) * 30
-            
             # Puntuación final
             score = base_score + capture_bonus - escape_penalty
             # Aplicar multiplicador de dificultad
@@ -979,8 +939,7 @@ class GameWindow:
             return max(score, 0)
         return 0
     
-    #E: None
-    #S: None
+    # handle player movement and sprinting
     def handle_movement(self, dt):
         keys = pygame.key.get_pressed()
         
@@ -1019,14 +978,11 @@ class GameWindow:
         self.player.update_animation(dt)
         
         if moved:
-            if self.player.sprint_active:
-                self.move_cooldown = self.move_delay / 3
-            else:
-                self.move_cooldown = self.move_delay
+            if self.player.sprint_active: self.move_cooldown = self.move_delay / 3
+            else: self.move_cooldown = self.move_delay
 
     # Spawn enemigos en posiciones válidas alejadas del jugador
     def spawn_enemigos(self):
-        import random
         num_enemigos = 3 if self.modo == 'modo_escapa' else 3
         
         for _ in range(num_enemigos):
@@ -1043,22 +999,18 @@ class GameWindow:
                     break
                 attempts += 1
 
-    #E: None
-    #S: None
+    # main game loop
     def loop(self):
         while self.running:
             dt = self.clock.tick(60) / 1000.0
             
             for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.running = False
+                if event.type == pygame.QUIT: self.running = False
                 elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        self.running = False
+                    if event.key == pygame.K_ESCAPE: self.running = False
                     elif event.key == pygame.K_SPACE and self.modo == 'modo_escapa':
                         # Colocar trampa en modo Escapa
-                        if not self.game_won and not self.game_over:
-                            self.colocar_trampa()
+                        if not self.game_won and not self.game_over: self.colocar_trampa()
             
             if not self.game_won and not self.game_over:
                 self.game_time += dt
@@ -1076,13 +1028,11 @@ class GameWindow:
                     # Modo Escapa: game over si te toca un enemigo
                     if self.check_enemy_collision():
                         self.game_over = True
-                        if self.defeat_sound:
-                            self.defeat_sound.play()
+                        if self.defeat_sound: self.defeat_sound.play()
                     if self.check_win_condition():
                         self.game_won = True
                         self.final_score = self.calculate_score()
-                        if self.victory_sound:
-                            self.victory_sound.play()
+                        if self.victory_sound: self.victory_sound.play()
                     
                     # Verificar trampas
                     self.check_trampa_colision()
@@ -1092,48 +1042,42 @@ class GameWindow:
                 
                 elif self.modo == 'modo_cazador':
                     # Modo Cazador: eliminas enemigos al tocarlos
-                    if self.check_enemy_collision():
-                        self.eliminar_enemigo_tocado()
+                    if self.check_enemy_collision(): self.eliminar_enemigo_tocado()
                     
                     # Verificar si algún enemigo escapó y generar uno nuevo
                     self.check_enemy_escape()
             
             self.draw_grid()
-            if self.modo == 'modo_escapa':
-                self.draw_trampas()
+            if self.modo == 'modo_escapa': self.draw_trampas()
             self.draw_enemigos()
             self.draw_player()
             self.draw_ui()
             
-            if self.game_won:
-                self.draw_win_message()
-            elif self.game_over:
-                self.draw_game_over_message()
+            if self.game_won: self.draw_win_message()
+            elif self.game_over: self.draw_game_over_message()
             
             pygame.display.flip()
 
     # Verificar colisiones con enemigos
     def check_enemy_collision(self):
         for enemigo in self.enemigos:
-            if enemigo.colisiona_con(self.player.posicion):
-                return True
+            if enemigo.colisiona_con(self.player.posicion): return True
         return False
     
+    # Eliminar enemigo que tocó el jugador en modo Cazador
     def eliminar_enemigo_tocado(self):
-        """Eliminar enemigo que tocó el jugador en modo Cazador"""
+
         enemigos_a_eliminar = []
         
         for i, enemigo in enumerate(self.enemigos):
-            if enemigo.colisiona_con(self.player.posicion):
-                enemigos_a_eliminar.append(i)
+            if enemigo.colisiona_con(self.player.posicion): enemigos_a_eliminar.append(i)
         
         # Eliminar enemigos en orden inverso
         for i in sorted(enemigos_a_eliminar, reverse=True):
             del self.enemigos[i]
             self.enemigos_eliminados += 1
             
-            if self.death_sound:
-                self.death_sound.play()
+            if self.death_sound: self.death_sound.play()
             
             # Generar nuevo enemigo por cada uno capturado
             self.spawn_nuevo_enemigo()
@@ -1141,8 +1085,7 @@ class GameWindow:
     # Mover enemigos
     def move_enemigos(self, dt):
         # Actualizar animaciones de todos los enemigos
-        for enemigo in self.enemigos:
-            enemigo.update_animation(dt)
+        for enemigo in self.enemigos: enemigo.update_animation(dt)
         
         if self.enemigo_move_cooldown > 0:
             self.enemigo_move_cooldown -= dt
@@ -1156,12 +1099,10 @@ class GameWindow:
         for enemigo in self.enemigos:
             old_pos = enemigo.posicion.copy()
             
-            if self.modo == 'modo_escapa':
-                # Modo Escapa: enemigos persiguen al jugador
-                enemigo.comportamiento_enemigo('Escapa', self.player.posicion, self.mapa)
-            else:
-                # Modo Cazador: enemigos buscan la salida evitando al jugador
-                enemigo.comportamiento_enemigo('Cazador', self.player.posicion, self.mapa, self.salidas)
+            # Modo Escapa: enemigos persiguen al jugador
+            # Modo Cazador: enemigos buscan la salida evitando al jugador
+            if self.modo == 'modo_escapa': enemigo.comportamiento_enemigo('Escapa', self.player.posicion, self.mapa)
+            else: enemigo.comportamiento_enemigo('Cazador', self.player.posicion, self.mapa, self.salidas)
             
             # Verificar si la nueva posición es válida
             new_row, new_col = enemigo.posicion
@@ -1211,10 +1152,8 @@ class GameWindow:
             self.screen.blit(score_text, score_rect)
         else:  # modo_cazador
             # Verificar si perdió por tiempo o por enemigos escapados
-            if self.time_limit and self.game_time >= self.time_limit:
-                death_text = subtitle_font.render("¡Se acabó el tiempo!", True, (255, 255, 255))
-            else:
-                death_text = subtitle_font.render("¡Todos los enemigos escaparon!", True, (255, 255, 255))
+            if self.time_limit and self.game_time >= self.time_limit: death_text = subtitle_font.render("¡Se acabó el tiempo!", True, (255, 255, 255))
+            else: death_text = subtitle_font.render("¡Todos los enemigos escaparon!", True, (255, 255, 255))
             death_rect = death_text.get_rect(center=(self.width // 2, self.height // 2 - 40))
             self.screen.blit(death_text, death_rect)
             
@@ -1237,25 +1176,23 @@ class GameWindow:
         press_esc_rect = press_esc_text.get_rect(center=(self.width // 2, self.height // 2 + 120))
         self.screen.blit(press_esc_text, press_esc_rect)
 
+    # Colocar trampa
     def colocar_trampa(self):
-        """Coloca una trampa en la posición actual del jugador"""
-        if self.trampas_colocadas >= self.max_trampas:
-            return False
+        if self.trampas_colocadas >= self.max_trampas: return False
         
         player_pos = tuple(self.player.posicion)
         
         # Verificar que no haya ya una trampa en esta posición
         for trampa_pos in self.trampas:
-            if trampa_pos == player_pos:
-                return False
+            if trampa_pos == player_pos: return False
         
         # Colocar la trampa
         self.trampas.append(player_pos)
         self.trampas_colocadas += 1
         return True
 
+    # draw traps on the map
     def draw_trampas(self):
-        """Dibujar las trampas en el mapa usando sprites"""
         for trampa_pos in self.trampas:
             row, col = trampa_pos
             pos_x = self.offset_x + col * self.cell_size
@@ -1264,8 +1201,8 @@ class GameWindow:
             # Dibujar sprite de trampa
             self.screen.blit(self.trap_sprite, (pos_x, pos_y))
 
+    # Verificar colisiones de enemigos con trampas
     def check_trampa_colision(self):
-        """Verificar si algún enemigo cayó en una trampa (solo modo Escapa)"""
         enemigos_a_eliminar = []
         trampas_a_eliminar = []
         
@@ -1273,13 +1210,11 @@ class GameWindow:
             enemigo_pos = tuple(enemigo.posicion)
             if enemigo_pos in self.trampas:
                 enemigos_a_eliminar.append(i)
-                if enemigo_pos not in trampas_a_eliminar:
-                    trampas_a_eliminar.append(enemigo_pos)
+                if enemigo_pos not in trampas_a_eliminar: trampas_a_eliminar.append(enemigo_pos)
         
         # Eliminar trampas usadas (verificando que existan primero)
         for trampa_pos in trampas_a_eliminar:
-            if trampa_pos in self.trampas:
-                self.trampas.remove(trampa_pos)
+            if trampa_pos in self.trampas: self.trampas.remove(trampa_pos)
         
         # Eliminar enemigos en orden inverso para no afectar índices
         for i in sorted(enemigos_a_eliminar, reverse=True):
@@ -1293,44 +1228,36 @@ class GameWindow:
             respawn_time = self.game_time + 10.0
             self.enemigos_respawn_queue.append(respawn_time)
             
-            if self.death_sound:
-                self.death_sound.play()
+            if self.death_sound: self.death_sound.play()
     
+    # verify if it's time to respawn trapped enemies (only Escape mode)
     def check_enemy_respawn(self):
-        """Verificar si es momento de hacer respawn de enemigos atrapados (solo modo Escapa)"""
+
         # Revisar la cola de respawn
         enemigos_a_respawnear = []
         for i, respawn_time in enumerate(self.enemigos_respawn_queue):
-            if self.game_time >= respawn_time:
-                enemigos_a_respawnear.append(i)
+            if self.game_time >= respawn_time: enemigos_a_respawnear.append(i)
         
         # Respawnear enemigos
         for i in sorted(enemigos_a_respawnear, reverse=True):
             del self.enemigos_respawn_queue[i]
             self.spawn_nuevo_enemigo()
 
-    #E: None
-    #S: int or None
+    # get the final score if the game was won
     def get_final_score(self):
-        """Retorna la puntuación final si el juego fue ganado"""
-        if self.game_won:
-            return self.final_score
+        if self.game_won: return self.final_score
         return None
     
-    #E: None
-    #S: str
-    def get_player_name(self):
-        """Retorna el nombre del jugador"""
-        return self.player.nombre
+    # return player name, duh
+    def get_player_name(self): return self.player.nombre
 
+    # Verificar si algún enemigo llegó a la salida en modo Cazador
     def check_enemy_escape(self):
-        """Verificar si algún enemigo llegó a la salida en modo Cazador"""
         enemigos_escapados = []
         
         for i, enemigo in enumerate(self.enemigos):
             enemigo_pos = tuple(enemigo.posicion)
-            if enemigo_pos in [tuple(s) for s in self.salidas]:
-                enemigos_escapados.append(i)
+            if enemigo_pos in [tuple(s) for s in self.salidas]: enemigos_escapados.append(i)
         
         # Si al menos un enemigo escapó
         if enemigos_escapados:
@@ -1342,10 +1269,8 @@ class GameWindow:
                 # Generar nuevo enemigo por cada uno que escapó
                 self.spawn_nuevo_enemigo()
     
+    # Spawn un nuevo enemigo en una posición aleatoria válida
     def spawn_nuevo_enemigo(self):
-        """Generar un nuevo enemigo en posición aleatoria alejada del jugador"""
-        import random
-        
         attempts = 0
         while attempts < 200:
             row = random.randint(0, self.rows - 1)

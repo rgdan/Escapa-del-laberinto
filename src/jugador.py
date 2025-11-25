@@ -1,8 +1,7 @@
 import pygame
 from src.entidad import Entidad
 
-# player class, handles movement, sprinting, and animation
-
+# player class
 class Jugador(Entidad):
     def __init__(self, nombre, posicion, cell_size):
         self.nombre = nombre
@@ -48,8 +47,7 @@ class Jugador(Entidad):
             sprite = pygame.transform.scale(sprite, (self.cell_size, self.cell_size))
             self.sprites.append(sprite)
     
-    #E: dt (float), keys (pygame key state)
-    #S: None
+    # update sprinting and recharge 
     def update(self, dt, keys):
         if keys[pygame.K_LSHIFT] and self.sprints > 0 and not self.sprint_active:
             self.sprint_active = True
@@ -70,8 +68,7 @@ class Jugador(Entidad):
                     self.sprints += 1
                     self.time_since_sprint_used = 0
     
-    #E: dt (float)
-    #S: None
+    # update animation frames
     def update_animation(self, dt):
         if self.is_moving:
             self.animation_timer += dt
@@ -82,8 +79,7 @@ class Jugador(Entidad):
             self.animation_frame = 0
             self.animation_timer = 0
     
-    #E: nueva_fila (int), nueva_col (int), mapa (list of Terreno objects)
-    #S: bool (True si se movió)
+    # attempt to move the player
     def try_move(self, nueva_fila, nueva_col, mapa):
         if nueva_fila < 0 or nueva_fila >= len(mapa): return False
         if nueva_col < 0 or nueva_col >= len(mapa[0]): return False
@@ -96,8 +92,7 @@ class Jugador(Entidad):
         
         return True
     
-    #E: None
-    #S: pygame.Surface
+    # return current sprite based on movement and direction
     def get_current_sprite(self):
         if not self.is_moving:
             if self.direction == 'down': return self.sprites[0]
