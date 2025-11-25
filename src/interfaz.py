@@ -870,6 +870,20 @@ class GameWindow:
         win_rect = win_text.get_rect(center=(self.width // 2, self.height // 2 - 120))
         self.screen.blit(win_text, win_rect)
         
+        # Determinar multiplicador según dificultad
+        if self.dificultad == 'facil':
+            multiplier = 1.0
+            diff_text = "Fácil"
+        elif self.dificultad == 'normal':
+            multiplier = 1.5
+            diff_text = "Normal"
+        elif self.dificultad == 'dificil':
+            multiplier = 2.0
+            diff_text = "Difícil"
+        else:
+            multiplier = 1.0
+            diff_text = "Normal"
+        
         if self.modo == 'modo_escapa':
             time_text = subtitle_font.render(f"Tiempo: {self.game_time:.1f}s", True, (255, 255, 255))
             time_rect = time_text.get_rect(center=(self.width // 2, self.height // 2 - 60))
@@ -880,8 +894,13 @@ class GameWindow:
                 trap_rect = trap_text.get_rect(center=(self.width // 2, self.height // 2 - 20))
                 self.screen.blit(trap_text, trap_rect)
             
+            # Mostrar multiplicador
+            multiplier_text = small_font.render(f"Multiplicador ({diff_text}): x{multiplier}", True, (173, 216, 230))
+            multiplier_rect = multiplier_text.get_rect(center=(self.width // 2, self.height // 2 + 10))
+            self.screen.blit(multiplier_text, multiplier_rect)
+            
             score_text = subtitle_font.render(f"Puntuación: {self.final_score}", True, (255, 215, 0))
-            score_rect = score_text.get_rect(center=(self.width // 2, self.height // 2 + 20))
+            score_rect = score_text.get_rect(center=(self.width // 2, self.height // 2 + 50))
             self.screen.blit(score_text, score_rect)
         elif self.modo == 'modo_cazador':
             time_text = subtitle_font.render(f"Tiempo: {self.game_time:.1f}s", True, (255, 255, 255))
@@ -897,8 +916,14 @@ class GameWindow:
             escaped_rect = escaped_text.get_rect(center=(self.width // 2, self.height // 2 + 10))
             self.screen.blit(escaped_text, escaped_rect)
             
+            # Mostrar multiplicador
+            multiplier_text = small_font.render(f"Multiplicador ({diff_text}): x{multiplier}", True, (173, 216, 230))
+            multiplier_rect = multiplier_text.get_rect(center=(self.width // 2, self.height // 2 + 35))
+            self.screen.blit(multiplier_text, multiplier_rect)
+            
             score_text = subtitle_font.render(f"Puntuación Final: {self.final_score}", True, (255, 215, 0))
-            score_rect = score_text.get_rect(center=(self.width // 2, self.height // 2 + 50))
+            score_rect = score_text.get_rect(center=(self.width // 2, self.height // 2 + 70))
+            self.screen.blit(score_text, score_rect)
             self.screen.blit(score_text, score_rect)
         
         press_esc_text = subtitle_font.render("Presiona ESC para volver al menú", True, (255, 255, 255))
@@ -913,12 +938,24 @@ class GameWindow:
         
 
     def calculate_score(self):
+        # Determinar multiplicador según dificultad
+        if self.dificultad == 'facil':
+            multiplier = 1.0
+        elif self.dificultad == 'normal':
+            multiplier = 1.5
+        elif self.dificultad == 'dificil':
+            multiplier = 2.0
+        else:
+            multiplier = 1.0
+        
         if self.modo == 'modo_escapa':
             intervals = int(self.game_time / 5.0)
             time_score = 1000 - (intervals * 100)
             time_score = max(time_score, 0)
             # Añadir bonificación por enemigos atrapados
             total_score = time_score + self.trap_bonus
+            # Aplicar multiplicador de dificultad
+            total_score = int(total_score * multiplier)
             return total_score
         elif self.modo == 'modo_cazador':
             # Puntuación comienza en 0
@@ -936,7 +973,9 @@ class GameWindow:
             #time_penalty = int(self.game_time / 5.0) * 30
             
             # Puntuación final
-            score = base_score + capture_bonus - escape_penalty 
+            score = base_score + capture_bonus - escape_penalty
+            # Aplicar multiplicador de dificultad
+            score = int(score * multiplier)
             return max(score, 0)
         return 0
     
