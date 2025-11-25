@@ -856,7 +856,11 @@ class GameWindow:
         subtitle_font = pygame.font.Font(None, 36)
         small_font = pygame.font.Font(None, 28)
         
-        win_text = win_font.render("¡GANASTE!", True, (255, 215, 0))
+        if self.modo == 'modo_escapa':
+            win_text = win_font.render("¡GANASTE!", True, (255, 215, 0))
+        else:  # modo_cazador
+            win_text = win_font.render("TIEMPO AGOTADO", True, (255, 215, 0))
+        
         win_rect = win_text.get_rect(center=(self.width // 2, self.height // 2 - 120))
         self.screen.blit(win_text, win_rect)
         
@@ -1009,9 +1013,8 @@ class GameWindow:
                 # Verificar límite de tiempo en Modo Cazador
                 if self.modo == 'modo_cazador' and self.time_limit:
                     if self.game_time >= self.time_limit:
-                        self.game_over = True
-                        if self.defeat_sound:
-                            self.defeat_sound.play()
+                        self.game_won = True
+                        self.final_score = self.calculate_score()
                 
                 self.handle_movement(dt)
                 self.move_enemigos(dt)
@@ -1037,12 +1040,7 @@ class GameWindow:
                     
                     # Verificar si algún enemigo escapó y generar uno nuevo
                     self.check_enemy_escape()
-                
-                if  self.check_win_condition():
-                    self.game_won = True
-                    self.final_score = self.calculate_score()
-                    if self.victory_sound:
-                        self.victory_sound.play()
+            
             self.draw_grid()
             if self.modo == 'modo_escapa':
                 self.draw_trampas()
@@ -1076,6 +1074,9 @@ class GameWindow:
         for i in sorted(enemigos_a_eliminar, reverse=True):
             del self.enemigos[i]
             self.enemigos_eliminados += 1
+            
+            if self.death_sound:
+                self.death_sound.play()
             
             # Generar nuevo enemigo por cada uno capturado
             self.spawn_nuevo_enemigo()
@@ -1259,14 +1260,9 @@ class GameWindow:
             for i in sorted(enemigos_escapados, reverse=True):
                 del self.enemigos[i]
                 self.enemigos_escapados += 1
-            
-            
-            
-            # Si todos los enemigos escaparon, game over
-            if len(self.enemigos) == 0:
-                self.game_over = True
-                if self.defeat_sound:
-                    self.defeat_sound.play()
+                
+                # Generar nuevo enemigo por cada uno que escapó
+                self.spawn_nuevo_enemigo()
     
     def spawn_nuevo_enemigo(self):
         """Generar un nuevo enemigo en posición aleatoria alejada del jugador"""
