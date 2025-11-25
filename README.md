@@ -1,6 +1,6 @@
 ## Maze Escape Project
 
-![place holder image](https://i.imgur.com/yUwazMb.png)
+![gameplay](sprites/gameplay.png)
 
 ---
 
