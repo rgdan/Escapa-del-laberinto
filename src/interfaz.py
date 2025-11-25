@@ -618,6 +618,19 @@ class GameWindow:
         
         self.game_time = 0.0
         self.final_score = 0
+        
+        # Time limit para Modo Cazador según dificultad
+        if modo == 'modo_cazador':
+            if dificultad == 'facil':
+                self.time_limit = 180.0  # 3 minutos
+            elif dificultad == 'normal':
+                self.time_limit = 120.0  # 2 minutos
+            elif dificultad == 'dificil':
+                self.time_limit = 60.0   # 1 minuto
+            else:
+                self.time_limit = 120.0  # default 2 minutos
+        else:
+            self.time_limit = None  # Sin límite en Modo Escapa
 
         # Cargar texturas con manejo de errores
         try:
@@ -808,6 +821,16 @@ class GameWindow:
         elif self.modo == 'modo_cazador':
             enemies_y = ui_y + 50
             
+            # Mostrar tiempo restante
+            if self.time_limit:
+                time_remaining = max(0, self.time_limit - self.game_time)
+                minutes = int(time_remaining // 60)
+                seconds = int(time_remaining % 60)
+                time_color = (255, 255, 255) if time_remaining > 30 else (255, 0, 0)
+                timer_text = self.font.render(f"Tiempo: {minutes}:{seconds:02d}", True, time_color)
+                self.screen.blit(timer_text, (ui_x, enemies_y))
+                enemies_y += 40
+            
             # Mostrar enemigos capturados
             captured_text = self.font.render(f"Capturados: {self.enemigos_eliminados}", True, (0, 255, 0))
             self.screen.blit(captured_text, (ui_x, enemies_y))
@@ -982,6 +1005,14 @@ class GameWindow:
             
             if not self.game_won and not self.game_over:
                 self.game_time += dt
+                
+                # Verificar límite de tiempo en Modo Cazador
+                if self.modo == 'modo_cazador' and self.time_limit:
+                    if self.game_time >= self.time_limit:
+                        self.game_over = True
+                        if self.defeat_sound:
+                            self.defeat_sound.play()
+                
                 self.handle_movement(dt)
                 self.move_enemigos(dt)
                 
@@ -1121,7 +1152,11 @@ class GameWindow:
             score_rect = score_text.get_rect(center=(self.width // 2, self.height // 2 + 20))
             self.screen.blit(score_text, score_rect)
         else:  # modo_cazador
-            death_text = subtitle_font.render("¡Todos los enemigos escaparon!", True, (255, 255, 255))
+            # Verificar si perdió por tiempo o por enemigos escapados
+            if self.time_limit and self.game_time >= self.time_limit:
+                death_text = subtitle_font.render("¡Se acabó el tiempo!", True, (255, 255, 255))
+            else:
+                death_text = subtitle_font.render("¡Todos los enemigos escaparon!", True, (255, 255, 255))
             death_rect = death_text.get_rect(center=(self.width // 2, self.height // 2 - 40))
             self.screen.blit(death_text, death_rect)
             
