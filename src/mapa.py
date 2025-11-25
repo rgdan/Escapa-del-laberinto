@@ -215,14 +215,6 @@ class GeneradorMapa:
         # convertir algunos CAMINO en obstáculos (lianas/túneles/muros) sin romper conectividad
         self._convertir_caminos_a_obstaculos()
 
-    # obtener todas las celdas transitables de tipos permitidos
-    def obtener_todas_celdas_transitables(self, tipos_permitidos):
-        celdas = []
-        for fila in range(self.filas):
-            for columna in range(self.columnas):
-                if self.matriz[fila][columna] in tipos_permitidos: celdas.append((fila, columna))
-        return celdas
-
     # obtener componentes conexas de tipos permitidos
     def obtener_componentes_conexas(self, tipos_permitidos):
         visitados = [[False for _ in range(self.columnas)] for _ in range(self.filas)]
@@ -405,23 +397,22 @@ class GeneradorMapa:
     # generar el mapa completo, the main attraction
     def generar(self):
         
-        # 1) limpiar todo a MURO
+        #limpiar todo a MURO
         for fila in range(self.filas):
             for columna in range(self.columnas): self.matriz[fila][columna] = MURO
 
-        # 3) elegir y abrir salidas
+        # elegir y abrir salidas
         self.elegir_salidas()
         # asegurar que exista una salida principal antes de usarla
         if not self.salidas: self.elegir_salidas()
         salida_principal = self.salidas[0]
 
-       
         tallado_exitoso = self.tallar_camino_aleatorio(self.inicio, salida_principal)
         
         # si no talló correctamente, conectar ignorando tipos
         if not tallado_exitoso or self.buscar_camino(self.inicio, salida_principal, {CAMINO, TUNEL}) is None: self.conectar_ignorando_tipos(self.inicio, salida_principal)
 
-        # 5) opcional: conectar a todas las salidas restantes
+        # opcional: conectar a todas las salidas restantes
         if self.conectar_todas_salidas and len(self.salidas) > 1:
             for salida_extra in self.salidas[1:]:
                 if self.buscar_camino(self.inicio, salida_extra, {CAMINO, TUNEL}) is None:
@@ -429,17 +420,17 @@ class GeneradorMapa:
                     tallado_ok = self.tallar_camino_aleatorio(self.inicio, salida_extra)
                     if not tallado_ok or self.buscar_camino(self.inicio, salida_extra, {CAMINO, TUNEL}) is None:
                         self.conectar_ignorando_tipos(self.inicio, salida_extra)
-        # 6) rellenar el resto del mapa con mezcla aleatoria
+        # rellenar el resto del mapa con mezcla aleatoria
         self.rellenar_mapa_aleatorio()
 
-        # 6.5) validar conectividad completa para jugador y enemigos
+        # validar conectividad completa para jugador y enemigos
         self.validar_conectividad_completa()
 
-        # 7) validación final de la salida principal
+        # validación final de la salida principal
         if self.buscar_camino(self.inicio, salida_principal, {CAMINO, TUNEL}) is None:
             self.conectar_ignorando_tipos(self.inicio, salida_principal)
 
-        # 8) validación final: asegurar que cada salida tenga al menos un vecino CAMINO
+        # validación final: asegurar que cada salida tenga al menos un vecino CAMINO
         for sx, sy in self.salidas:
             tiene_vecino_camino = False
             for vx, vy in self.obtener_vecinos_4_direcciones(sx, sy):
@@ -454,7 +445,7 @@ class GeneradorMapa:
                         self.matriz[vx][vy] = CAMINO
                         break
 
-        # 8.5) validación final de conectividad para enemigos
+        # validación final de conectividad para enemigos
         for salida in self.salidas:
             if self.buscar_camino(self.inicio, salida, {CAMINO}) is None: self.conectar_ignorando_tipos_con_camino(self.inicio, salida)
 

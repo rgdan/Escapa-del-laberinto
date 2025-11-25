@@ -1150,27 +1150,6 @@ class GameWindow:
             score_text = subtitle_font.render(f"Puntuación: {self.final_score}", True, (255, 215, 0))
             score_rect = score_text.get_rect(center=(self.width // 2, self.height // 2 + 20))
             self.screen.blit(score_text, score_rect)
-        else:  # modo_cazador
-            # Verificar si perdió por tiempo o por enemigos escapados
-            if self.time_limit and self.game_time >= self.time_limit: death_text = subtitle_font.render("¡Se acabó el tiempo!", True, (255, 255, 255))
-            else: death_text = subtitle_font.render("¡Todos los enemigos escaparon!", True, (255, 255, 255))
-            death_rect = death_text.get_rect(center=(self.width // 2, self.height // 2 - 40))
-            self.screen.blit(death_text, death_rect)
-            
-            # Mostrar estadísticas finales
-            final_score = self.calculate_score()
-            
-            captured_text = small_font.render(f"Enemigos capturados: {self.enemigos_eliminados} (+{self.bonus_score} pts)", True, (0, 255, 0))
-            captured_rect = captured_text.get_rect(center=(self.width // 2, self.height // 2))
-            self.screen.blit(captured_text, captured_rect)
-            
-            escaped_text = small_font.render(f"Enemigos escapados: {self.enemigos_escapados} ({self.penalty_score} pts)", True, (255, 100, 100))
-            escaped_rect = escaped_text.get_rect(center=(self.width // 2, self.height // 2 + 30))
-            self.screen.blit(escaped_text, escaped_rect)
-            
-            score_text = subtitle_font.render(f"Puntuación Final: {final_score}", True, (255, 215, 0))
-            score_rect = score_text.get_rect(center=(self.width // 2, self.height // 2 + 70))
-            self.screen.blit(score_text, score_rect)
         
         press_esc_text = subtitle_font.render("Presiona ESC para volver al menú", True, (255, 255, 255))
         press_esc_rect = press_esc_text.get_rect(center=(self.width // 2, self.height // 2 + 120))
