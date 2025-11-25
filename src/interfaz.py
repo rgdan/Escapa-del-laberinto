@@ -622,11 +622,11 @@ class GameWindow:
         # Time limit para Modo Cazador según dificultad
         if modo == 'modo_cazador':
             if dificultad == 'facil':
-                self.time_limit = 180.0  # 3 minutos
-            elif dificultad == 'normal':
                 self.time_limit = 120.0  # 2 minutos
+            elif dificultad == 'normal':
+                self.time_limit = 60.0  # 1 minuto
             elif dificultad == 'dificil':
-                self.time_limit = 60.0   # 1 minuto
+                self.time_limit = 25.0   # 25 segundos
             else:
                 self.time_limit = 120.0  # default 2 minutos
         else:
