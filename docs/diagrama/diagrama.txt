@@ -1,0 +1,385 @@
+@startuml
+class Terreno {
+  - x: int
+  - y: int
+  + __init__(x: int, y: int)
+  + es_accesible_jugador(): bool
+  + es_accesible_enemigo(): bool
+}
+
+class Camino {
+  + es_accesible_jugador(): bool
+  + es_accesible_enemigo(): bool
+}
+
+class Liana {
+  + es_accesible_jugador(): bool
+  + es_accesible_enemigo(): bool
+}
+
+class Tunel {
+  + es_accesible_jugador(): bool
+  + es_accesible_enemigo(): bool
+}
+
+class Muro {
+  + es_accesible_jugador(): bool
+  + es_accesible_enemigo(): bool
+}
+
+class Trampa {
+  - activa: bool
+  + __init__(x: int, y: int)
+  + es_accesible_jugador(): bool
+  + es_accesible_enemigo(): bool
+  + activar_trampa(): bool
+}
+
+class ScoreManager {
+  - scores_escapa: list
+  - scores_cazador: list
+  - max_scores: int
+  + __init__()
+  + add_score(nombre: str, puntuacion: int, modo: str): bool
+  + get_scores(modo: str): list
+  + get_rank(nombre: str, puntuacion: int, modo: str): int
+  - _sort_scores(scores: list): void
+}
+
+class GeneradorMapa {
+  - filas: int
+  - columnas: int
+  - inicio: tuple
+  - numero_salidas: int
+  - conectar_todas_salidas: bool
+  - probabilidad_tunel_en_camino: float
+  - prob_camino: float
+  - prob_muro: float
+  - prob_liana: float
+  - prob_tunel: float
+  - excluir_salidas_esquinas: bool
+  - porcentaje_conversion_camino: float
+  - matriz: list[list[int]]
+  - salidas: list[tuple]
+  + __init__()
+  + obtener_vecinos_4_direcciones(fila: int, columna: int): generator
+  + obtener_coordenadas_borde(): list[tuple]
+  + elegir_salidas(): void
+  + buscar_camino(origen: tuple, destino: tuple, tipos_permitidos: set): list
+  + conectar_ignorando_tipos(origen: tuple, destino: tuple): void
+  + tallar_camino_aleatorio(origen: tuple, destino: tuple): bool
+  + rellenar_mapa_aleatorio(): void
+  + obtener_todas_celdas_transitables(tipos_permitidos: set): list[tuple]
+  + obtener_componentes_conexas(tipos_permitidos: set): list[list[tuple]]
+  + conectar_componentes(componentes: list, tipos_permitidos: set): void
+  + conectar_ignorando_tipos_con_camino(origen: tuple, destino: tuple): void
+  + validar_conectividad_completa(): void
+  + generar(): tuple
+  - _convertir_caminos_a_obstaculos(): void
+  - _convertir_a_terrenos(): list[list[Terreno]]
+}
+
+class Entidad {
+  - posicion: tuple
+  + __init__(posicion: tuple)
+  + mover(nueva_posicion: tuple): void
+}
+
+class Enemigo {
+  - direction: str
+  - animation_frame: int
+  - animation_timer: float
+  - animation_speed: float
+  - is_moving: bool
+  - cell_size: int
+  - target_exit: tuple
+  - sprites: list
+  + __init__(posicion: tuple, salidas: list)
+  + get_current_sprite(): Surface
+  + update_animation(dt: float): void
+  + colisiona_con(pos_jugador: tuple): bool
+  + comportamiento_enemigo(modo: str, pos_jugador: tuple, mapa: list, salidas: list): void
+  - _load_sprites(): void
+  - _actualizar_direccion(old_pos: list, new_pos: list): void
+  - _persecucion_simple_pos(pos_jugador: tuple, mapa: list): list
+  - _encontrar_mejor_movimiento(pos_jugador: tuple, mapa: list): list
+  - _movimiento_hacia_objetivo(pos_jugador: tuple, mapa: list): list
+  - _huir_jugador_pos(pos_jugador: tuple, mapa: list): list
+  - _encontrar_mejor_escape(pos_jugador: tuple, mapa: list): list
+  - _buscar_salida(salidas: list, mapa: list, pos_jugador: tuple): list
+  - _buscar_salida_inteligente(salidas: list, mapa: list, pos_jugador: tuple): list
+  - _buscar_camino_a_salida(salida: tuple, mapa: list, pos_jugador: tuple, evitar_jugador: bool): list
+}
+
+class Jugador {
+  - nombre: str
+  - cell_size: int
+  - sprints: int
+  - max_sprints: int
+  - sprint_recharge_time: float
+  - time_since_sprint_used: float
+  - sprint_active: bool
+  - sprint_duration: float
+  - sprint_timer: float
+  - direction: str
+  - is_moving: bool
+  - animation_frame: int
+  - animation_timer: float
+  - animation_speed: float
+  - sprites: list
+  + __init__(nombre: str, posicion: tuple, cell_size: int)
+  + update(dt: float, keys: dict): void
+  + update_animation(dt: float): void
+  + try_move(nueva_fila: int, nueva_col: int, mapa: list): bool
+  + get_current_sprite(): Surface
+  - _load_sprites(): void
+}
+
+class InputBox {
+  - rect: Rect
+  - color_inactive: tuple
+  - color_active: tuple
+  - color: tuple
+  - text: str
+  - font: Font
+  - txt_surface: Surface
+  - active: bool
+  - bg_color: tuple
+  + __init__(x: int, y: int, width: int, height: int, font: Font, text: str)
+  + handle_event(event: Event): str
+  + draw(screen: Surface): void
+  + get_text(): str
+}
+
+class Button {
+  - rect: Rect
+  - text: str
+  - action: str
+  - color: tuple
+  - text_color: tuple
+  + __init__(x: int, y: int, width: int, height: int, text: str, action: str, color: tuple, text_color: tuple)
+  + draw(screen: Surface, font: Font): void
+  + is_clicked(mouse_pos: tuple, mouse_click: bool): bool
+}
+
+class MainMenu {
+  - width: int
+  - height: int
+  - screen: Surface
+  - clock: Clock
+  - BG_COLOR: tuple
+  - TITLE_COLOR: tuple
+  - BUTTON_COLOR: tuple
+  - BUTTON_EXIT_COLOR: tuple
+  - TEXT_COLOR: tuple
+  - BORDER_COLOR: tuple
+  - title_font: Font
+  - button_font: Font
+  - buttons: list[Button]
+  - running: bool
+  - selected_option: str
+  + __init__(width: int, height: int)
+  + draw(): void
+  + interactions(): void
+  + run(): str
+}
+
+class PlayerRegistration {
+  - width: int
+  - height: int
+  - screen: Surface
+  - clock: Clock
+  - BG_COLOR: tuple
+  - TITLE_COLOR: tuple
+  - BUTTON_COLOR: tuple
+  - TEXT_COLOR: tuple
+  - title_font: Font
+  - text_font: Font
+  - button_font: Font
+  - input_box: InputBox
+  - continue_button: Button
+  - running: bool
+  - player_name: str
+  + __init__(width: int, height: int)
+  + draw(): void
+  + interactions(): void
+  + run(): str
+}
+
+class Leaderboard {
+  - width: int
+  - height: int
+  - screen: Surface
+  - clock: Clock
+  - score_manager: ScoreManager
+  - BG_COLOR: tuple
+  - TITLE_COLOR: tuple
+  - SUBTITLE_COLOR: tuple
+  - TEXT_COLOR: tuple
+  - BUTTON_COLOR: tuple
+  - title_font: Font
+  - subtitle_font: Font
+  - text_font: Font
+  - button_font: Font
+  - back_button: Button
+  - running: bool
+  + __init__(width: int, height: int, score_manager: ScoreManager)
+  + draw(): void
+  + draw_score_column(title: str, scores: list, x_offset: int, width: int): void
+  + interactions(): void
+  + run(): void
+}
+
+class DifficultySelection {
+  - width: int
+  - height: int
+  - screen: Surface
+  - clock: Clock
+  - BG_COLOR: tuple
+  - TITLE_COLOR: tuple
+  - BUTTON_COLOR: tuple
+  - BUTTON_HARD_COLOR: tuple
+  - TEXT_COLOR: tuple
+  - title_font: Font
+  - button_font: Font
+  - desc_font: Font
+  - buttons: list[Button]
+  - descriptions: list[str]
+  - running: bool
+  - selected_difficulty: str
+  + __init__(width: int, height: int)
+  + draw(): void
+  + interactions(): void
+  + run(): str
+}
+
+class HowToPlay {
+  - width: int
+  - height: int
+  - screen: Surface
+  - clock: Clock
+  - BG_COLOR: tuple
+  - TITLE_COLOR: tuple
+  - TEXT_COLOR: tuple
+  - SUBTITLE_COLOR: tuple
+  - BUTTON_COLOR: tuple
+  - title_font: Font
+  - subtitle_font: Font
+  - text_font: Font
+  - button_font: Font
+  - back_button: Button
+  - tile_size: int
+  - texture_camino: Surface
+  - texture_muro: Surface
+  - texture_lianas: Surface
+  - texture_tunel: Surface
+  - running: bool
+  + __init__(width: int, height: int)
+  + draw(): void
+  + interactions(): void
+  + run(): void
+}
+
+class GameWindow {
+  - mapa: list[list[Terreno]]
+  - title: str
+  - rows: int
+  - cols: int
+  - width: int
+  - height: int
+  - cell_size: int
+  - modo: str
+  - salidas: list[tuple]
+  - dificultad: str
+  - screen: Surface
+  - clock: Clock
+  - running: bool
+  - game_won: bool
+  - game_over: bool
+  - game_time: float
+  - final_score: int
+  - time_limit: float
+  - texture_camino: Surface
+  - texture_muro: Surface
+  - texture_tunel: Surface
+  - texture_lianas: Surface
+  - energy_icon: Surface
+  - trap_sprite: Surface
+  - sprint_sound: Sound
+  - victory_sound: Sound
+  - death_sound: Sound
+  - defeat_sound: Sound
+  - color_bg: tuple
+  - color_grid: tuple
+  - color_text: tuple
+  - grid_w: int
+  - grid_h: int
+  - offset_x: int
+  - offset_y: int
+  - player: Jugador
+  - enemigos: list[Enemigo]
+  - enemigo_move_cooldown: float
+  - enemigo_move_delay: float
+  - trampas: list[tuple]
+  - max_trampas: int
+  - trampas_colocadas: int
+  - enemigos_eliminados: int
+  - trap_bonus: int
+  - enemigos_respawn_queue: list[float]
+  - enemigos_escapados: int
+  - penalty_score: int
+  - bonus_score: int
+  - font: Font
+  - move_cooldown: float
+  - move_delay: float
+  - sprint_sound_played: bool
+  + __init__(mapa: list, title: str, width: int, height: int, cell_size: int, player_name: str, inicio: tuple, modo: str, salidas: list, dificultad: str)
+  + draw_grid(): void
+  + draw_player(): void
+  + draw_enemigos(): void
+  + draw_ui(): void
+  + draw_win_message(): void
+  + check_win_condition(): bool
+  + calculate_score(): int
+  + handle_movement(dt: float): void
+  + spawn_enemigos(): void
+  + loop(): void
+  + check_enemy_collision(): bool
+  + eliminar_enemigo_tocado(): void
+  + move_enemigos(dt: float): void
+  + draw_game_over_message(): void
+  + colocar_trampa(): bool
+  + draw_trampas(): void
+  + check_trampa_colision(): void
+  + check_enemy_respawn(): void
+  + get_final_score(): int
+  + get_player_name(): str
+  + check_enemy_escape(): void
+  + spawn_nuevo_enemigo(): void
+}
+
+Terreno <|-- Camino
+Terreno <|-- Liana
+Terreno <|-- Tunel
+Terreno <|-- Muro
+Terreno <|-- Trampa
+
+GeneradorMapa ..> Camino : uses
+GeneradorMapa ..> Muro : uses
+GeneradorMapa ..> Liana : uses
+GeneradorMapa ..> Tunel : uses
+
+Entidad <|-- Enemigo
+Entidad <|-- Jugador
+
+MainMenu ..> Button : uses
+PlayerRegistration ..> InputBox : uses
+PlayerRegistration ..> Button : uses
+Leaderboard ..> Button : uses
+DifficultySelection ..> Button : uses
+HowToPlay ..> Button : uses
+GameWindow ..> Jugador : uses
+GameWindow ..> Enemigo : uses
+GameWindow ..> Terreno : uses
+
+@enduml
