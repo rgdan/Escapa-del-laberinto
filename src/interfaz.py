@@ -1059,6 +1059,11 @@ class GameWindow:
             self.enemigo_move_cooldown -= dt
             return
         
+        # Recopilar todas las posiciones actuales de enemigos
+        enemigo_positions = set()
+        for enemigo in self.enemigos:
+            enemigo_positions.add(tuple(enemigo.posicion))
+        
         for enemigo in self.enemigos:
             old_pos = enemigo.posicion.copy()
             
@@ -1071,6 +1076,7 @@ class GameWindow:
             
             # Verificar si la nueva posición es válida
             new_row, new_col = enemigo.posicion
+            new_pos = (new_row, new_col)
             
             # Si la posición es inválida, revertir
             if (new_row < 0 or new_row >= self.rows or 
@@ -1080,6 +1086,14 @@ class GameWindow:
             elif not self.mapa[new_row][new_col].es_accesible_enemigo():
                 enemigo.posicion = old_pos
                 enemigo.is_moving = False
+            elif new_pos != tuple(old_pos) and new_pos in enemigo_positions:
+                # Si otro enemigo ya está en esta posición, revertir
+                enemigo.posicion = old_pos
+                enemigo.is_moving = False
+            else:
+                # Actualizar el conjunto de posiciones
+                enemigo_positions.discard(tuple(old_pos))
+                enemigo_positions.add(new_pos)
         
         self.enemigo_move_cooldown = self.enemigo_move_delay
 
