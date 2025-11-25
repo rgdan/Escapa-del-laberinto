@@ -989,8 +989,6 @@ class GameWindow:
                     # Modo Escapa: game over si te toca un enemigo
                     if self.check_enemy_collision():
                         self.game_over = True
-                        if self.death_sound:
-                            self.death_sound.play()
                         if self.defeat_sound:
                             self.defeat_sound.play()
                     if self.check_win_condition():
@@ -1012,8 +1010,8 @@ class GameWindow:
                 if  self.check_win_condition():
                     self.game_won = True
                     self.final_score = self.calculate_score()
-                    if self.death_sound:
-                        self.death_sound.play()
+                    if self.victory_sound:
+                        self.victory_sound.play()
             self.draw_grid()
             if self.modo == 'modo_escapa':
                 self.draw_trampas()
@@ -1180,6 +1178,8 @@ class GameWindow:
         for i in sorted(enemigos_a_eliminar, reverse=True):
             del self.enemigos[i]
             self.enemigos_eliminados += 1
+            if self.death_sound:
+                self.death_sound.play()
 
     #E: None
     #S: int or None
