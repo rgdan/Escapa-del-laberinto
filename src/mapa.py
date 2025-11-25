@@ -12,7 +12,7 @@ class GeneradorMapa:
         self.filas = 15
         self.columnas = 20
         self.inicio = (1,1)
-        self.numero_salidas = 1
+        self.numero_salidas = 2
         self.conectar_todas_salidas = False
         self.probabilidad_tunel_en_camino = 0.10
         self.prob_camino, self.prob_muro, self.prob_liana, self.prob_tunel = (0.45, 0.10, 0.15, 0.10)

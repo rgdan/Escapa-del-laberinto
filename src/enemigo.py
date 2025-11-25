@@ -2,7 +2,7 @@ from src.entidad import Entidad
 import pygame
 
 class Enemigo(Entidad):
-    def __init__(self, posicion):
+    def __init__(self, posicion, salidas=None):
         super().__init__(posicion)
         self.direction = 'down'
         self.animation_frame = 0
@@ -10,6 +10,13 @@ class Enemigo(Entidad):
         self.animation_speed = 0.15
         self.is_moving = False
         self.cell_size = 48
+        
+        # Asignar salida objetivo aleatoria para modo Cazador
+        if salidas and len(salidas) > 0:
+            import random
+            self.target_exit = random.choice(salidas)
+        else:
+            self.target_exit = None
         
         self._load_sprites()
     
@@ -100,9 +107,9 @@ class Enemigo(Entidad):
                 nueva_pos = self._persecucion_simple_pos(pos_jugador, mapa)
         
         elif modo == "Cazador":
-            # Prioridad: Buscar salida más cercana evitando al jugador
-            if mapa and salidas:
-                nueva_pos = self._buscar_salida_inteligente(salidas, mapa, pos_jugador)
+            # Ir directamente a la salida asignada
+            if mapa and self.target_exit:
+                nueva_pos = self._buscar_salida_inteligente([self.target_exit], mapa, pos_jugador)
             
             # Si no puede ir a la salida, huir del jugador
             if not nueva_pos:

@@ -986,7 +986,7 @@ class GameWindow:
                 if (isinstance(self.mapa[row][col], Camino) and 
                     [row, col] != self.player.posicion and
                     abs(row - self.player.posicion[0]) + abs(col - self.player.posicion[1]) > 10):
-                    self.enemigos.append(Enemigo([row, col]))
+                    self.enemigos.append(Enemigo([row, col], self.salidas))
                     break
                 attempts += 1
 
@@ -1277,6 +1277,6 @@ class GameWindow:
             if (isinstance(self.mapa[row][col], Camino) and 
                 [row, col] != self.player.posicion and
                 abs(row - self.player.posicion[0]) + abs(col - self.player.posicion[1]) > 10):
-                self.enemigos.append(Enemigo([row, col]))
+                self.enemigos.append(Enemigo([row, col], self.salidas))
                 break
             attempts += 1
