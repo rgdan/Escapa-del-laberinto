@@ -695,7 +695,7 @@ class GameWindow:
         
         # Variables para trampas (solo modo Escapa)
         self.trampas = []
-        self.max_trampas = 5
+        self.max_trampas = 3
         self.trampas_colocadas = 0
         self.enemigos_eliminados = 0
         
@@ -704,6 +704,9 @@ class GameWindow:
         
         # Cola de respawn para enemigos atrapados (tiempo, posición spawn)
         self.enemigos_respawn_queue = []
+        
+        # Cola para devolver trampas después de 5 segundos
+        self.trampas_return_queue = []
         
         # Variables adicionales para modo Cazador
         self.enemigos_escapados = 0
@@ -1039,6 +1042,9 @@ class GameWindow:
                     
                     # Verificar cola de respawn de enemigos
                     self.check_enemy_respawn()
+                    
+                    # Verificar devolución de trampas
+                    self.check_trap_return()
                 
                 elif self.modo == 'modo_cazador':
                     # Modo Cazador: eliminas enemigos al tocarlos
@@ -1207,6 +1213,10 @@ class GameWindow:
             respawn_time = self.game_time + 10.0
             self.enemigos_respawn_queue.append(respawn_time)
             
+            # Programar devolución de trampa después de 5 segundos
+            trap_return_time = self.game_time + 5.0
+            self.trampas_return_queue.append(trap_return_time)
+            
             if self.death_sound: self.death_sound.play()
     
     # verify if it's time to respawn trapped enemies (only Escape mode)
@@ -1221,6 +1231,18 @@ class GameWindow:
         for i in sorted(enemigos_a_respawnear, reverse=True):
             del self.enemigos_respawn_queue[i]
             self.spawn_nuevo_enemigo()
+    
+    # Verificar si es momento de devolver trampas (solo modo Escapa)
+    def check_trap_return(self):
+        # Revisar la cola de devolución de trampas
+        trampas_a_devolver = []
+        for i, return_time in enumerate(self.trampas_return_queue):
+            if self.game_time >= return_time: trampas_a_devolver.append(i)
+        
+        # Devolver trampas
+        for i in sorted(trampas_a_devolver, reverse=True):
+            del self.trampas_return_queue[i]
+            if self.trampas_colocadas > 0: self.trampas_colocadas -= 1
 
     # get the final score if the game was won
     def get_final_score(self):
