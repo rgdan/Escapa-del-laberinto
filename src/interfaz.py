@@ -55,7 +55,8 @@ class Button:
         self.action = action
         self.color = color
         self.text_color = text_color
-        
+    
+    # draw the button
     def draw(self, screen, font):
         pygame.draw.rect(screen, self.color, self.rect, border_radius=10)
         pygame.draw.rect(screen, (163, 177, 138), self.rect, 3, border_radius=10)
@@ -395,6 +396,7 @@ class DifficultySelection:
     def draw(self):
         self.screen.fill(self.BG_COLOR)
         
+        # Draw title
         title = self.title_font.render("Selecciona Dificultad", True, self.TITLE_COLOR)
         title_rect = title.get_rect(center=(self.width // 2, int(self.height * 0.1)))
         self.screen.blit(title, title_rect)
@@ -420,6 +422,7 @@ class DifficultySelection:
         mouse_pos = pygame.mouse.get_pos()
         mouse_click = False
         
+        # Event handling
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
@@ -430,7 +433,8 @@ class DifficultySelection:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.running = False
                 self.selected_difficulty = None
-                
+
+        # Check button clicks 
         if mouse_click:
             for button in self.buttons:
                 if button.is_clicked(mouse_pos, mouse_click):
@@ -769,10 +773,12 @@ class GameWindow:
         sprint_text = self.font.render(f"x {self.player.sprints}", True, self.color_text)
         self.screen.blit(sprint_text, (ui_x + 40, ui_y))
         
+        # Indicador de sprint/recarga
         if self.player.sprint_active:
             time_remaining = self.player.sprint_duration - self.player.sprint_timer
             boost_text = self.font.render(f"BOOST: {time_remaining:.1f}s", True, (255, 255, 0))
             self.screen.blit(boost_text, (ui_x + 120, ui_y))
+        # Mostrar barra de recarga si no hay sprints disponibles
         elif self.player.sprints < self.player.max_sprints:
             recharge_progress = self.player.time_since_sprint_used / self.player.sprint_recharge_time
             bar_width = 100
@@ -851,6 +857,7 @@ class GameWindow:
             multiplier = 1.0
             diff_text = "Normal"
         
+        # Mostrar estadísticas y puntuación final
         if self.modo == 'modo_escapa':
             time_text = subtitle_font.render(f"Tiempo: {self.game_time:.1f}s", True, (255, 255, 255))
             time_rect = time_text.get_rect(center=(self.width // 2, self.height // 2 - 60))
@@ -946,15 +953,18 @@ class GameWindow:
     def handle_movement(self, dt):
         keys = pygame.key.get_pressed()
         
+        # Gestionar sprint
         was_sprinting = self.player.sprint_active
         self.player.update(dt, keys)
         
+        # Reproducir sonido de sprint si se activa
         if self.player.sprint_active and not was_sprinting and self.sprint_sound:
             self.sprint_sound.play()
             self.sprint_sound_played = True
-        elif not self.player.sprint_active:
+        elif not self.player.sprint_active: # detener sonido si no está sprintando
             self.sprint_sound_played = False
         
+        # Gestionar cooldown de movimiento
         if self.move_cooldown > 0:
             self.move_cooldown -= dt
             self.player.update_animation(dt)
@@ -965,6 +975,7 @@ class GameWindow:
         player_row, player_col = self.player.posicion
         moved = False
         
+        # Mover jugador según teclas presionadas
         if keys[pygame.K_w] or keys[pygame.K_UP]:
             self.player.direction = 'up'
             moved = self.player.try_move(player_row - 1, player_col, self.mapa)
@@ -980,6 +991,7 @@ class GameWindow:
         
         self.player.update_animation(dt)
         
+        # Aplicar cooldown tras movimiento
         if moved:
             if self.player.sprint_active: self.move_cooldown = self.move_delay / 3
             else: self.move_cooldown = self.move_delay
@@ -1007,6 +1019,7 @@ class GameWindow:
         while self.running:
             dt = self.clock.tick(60) / 1000.0
             
+            # Manejar eventos
             for event in pygame.event.get():
                 if event.type == pygame.QUIT: self.running = False
                 elif event.type == pygame.KEYDOWN:
@@ -1015,6 +1028,7 @@ class GameWindow:
                         # Colocar trampa en modo Escapa
                         if not self.game_won and not self.game_over: self.colocar_trampa()
             
+            # Actualizar lógica del juego si no ha terminado
             if not self.game_won and not self.game_over:
                 self.game_time += dt
                 
@@ -1024,8 +1038,8 @@ class GameWindow:
                         self.game_won = True
                         self.final_score = self.calculate_score()
                 
-                self.handle_movement(dt)
-                self.move_enemigos(dt)
+                self.handle_movement(dt) # Mover jugador
+                self.move_enemigos(dt) # Mover enemigos
                 
                 if self.modo == 'modo_escapa':
                     # Modo Escapa: game over si te toca un enemigo
@@ -1075,6 +1089,7 @@ class GameWindow:
 
         enemigos_a_eliminar = []
         
+        # Buscar enemigos que colisionan con el jugador
         for i, enemigo in enumerate(self.enemigos):
             if enemigo.colisiona_con(self.player.posicion): enemigos_a_eliminar.append(i)
         
@@ -1093,6 +1108,7 @@ class GameWindow:
         # Actualizar animaciones de todos los enemigos
         for enemigo in self.enemigos: enemigo.update_animation(dt)
         
+        # Controlar la velocidad de movimiento de los enemigos
         if self.enemigo_move_cooldown > 0:
             self.enemigo_move_cooldown -= dt
             return
@@ -1119,11 +1135,10 @@ class GameWindow:
                 new_col < 0 or new_col >= self.cols):
                 enemigo.posicion = old_pos
                 enemigo.is_moving = False
-            elif not self.mapa[new_row][new_col].es_accesible_enemigo():
+            elif not self.mapa[new_row][new_col].es_accesible_enemigo(): # Terreno inaccesible
                 enemigo.posicion = old_pos
                 enemigo.is_moving = False
-            elif new_pos != tuple(old_pos) and new_pos in enemigo_positions:
-                # Si otro enemigo ya está en esta posición, revertir
+            elif new_pos != tuple(old_pos) and new_pos in enemigo_positions: # Si otro enemigo ya está en esta posición, revertir
                 enemigo.posicion = old_pos
                 enemigo.is_moving = False
             else:
@@ -1148,6 +1163,7 @@ class GameWindow:
         game_over_rect = game_over_text.get_rect(center=(self.width // 2, self.height // 2 - 80))
         self.screen.blit(game_over_text, game_over_rect)
         
+        # Mensaje específico según modo
         if self.modo == 'modo_escapa':
             death_text = subtitle_font.render("¡Te atrapó el enemigo!", True, (255, 255, 255))
             death_rect = death_text.get_rect(center=(self.width // 2, self.height // 2 - 20))
@@ -1178,6 +1194,7 @@ class GameWindow:
 
     # draw traps on the map
     def draw_trampas(self):
+        # Dibujar cada trampa en el mapa
         for trampa_pos in self.trampas:
             row, col = trampa_pos
             pos_x = self.offset_x + col * self.cell_size
@@ -1188,11 +1205,13 @@ class GameWindow:
 
     # Verificar colisiones de enemigos con trampas
     def check_trampa_colision(self):
-        enemigos_a_eliminar = []
-        trampas_a_eliminar = []
+        enemigos_a_eliminar = [] # Índices de enemigos a eliminar
+        trampas_a_eliminar = [] # Posiciones de trampas a eliminar
         
+        # Verificar cada enemigo
         for i, enemigo in enumerate(self.enemigos):
             enemigo_pos = tuple(enemigo.posicion)
+            # Si el enemigo está en una trampa
             if enemigo_pos in self.trampas:
                 enemigos_a_eliminar.append(i)
                 if enemigo_pos not in trampas_a_eliminar: trampas_a_eliminar.append(enemigo_pos)
@@ -1217,11 +1236,9 @@ class GameWindow:
             trap_return_time = self.game_time + 5.0
             self.trampas_return_queue.append(trap_return_time)
             
-            if self.death_sound: self.death_sound.play()
+            if self.death_sound: self.death_sound.play() # Sonido de enemigo eliminado
     
-    # verify if it's time to respawn trapped enemies (only Escape mode)
     def check_enemy_respawn(self):
-
         # Revisar la cola de respawn
         enemigos_a_respawnear = []
         for i, respawn_time in enumerate(self.enemigos_respawn_queue):
@@ -1256,6 +1273,7 @@ class GameWindow:
     def check_enemy_escape(self):
         enemigos_escapados = []
         
+        # Verificar cada enemigo
         for i, enemigo in enumerate(self.enemigos):
             enemigo_pos = tuple(enemigo.posicion)
             if enemigo_pos in [tuple(s) for s in self.salidas]: enemigos_escapados.append(i)
@@ -1274,13 +1292,11 @@ class GameWindow:
     def spawn_nuevo_enemigo(self):
         attempts = 0
         while attempts < 200:
-            row = random.randint(0, self.rows - 1)
-            col = random.randint(0, self.cols - 1)
+            row = random.randint(0, self.rows - 1) # Generar fila aleatoria
+            col = random.randint(0, self.cols - 1) # Generar columna aleatoria
             
             # Verificar que la posición sea válida y esté lejos del jugador
-            if (isinstance(self.mapa[row][col], Camino) and 
-                [row, col] != self.player.posicion and
-                abs(row - self.player.posicion[0]) + abs(col - self.player.posicion[1]) > 10):
+            if (isinstance(self.mapa[row][col], Camino) and [row, col] != self.player.posicion and abs(row - self.player.posicion[0]) + abs(col - self.player.posicion[1]) > 10):
                 self.enemigos.append(Enemigo([row, col], self.salidas))
                 break
             attempts += 1
