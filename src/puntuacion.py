@@ -1,21 +1,21 @@
 # keep track of player scores
 class ScoreManager:
     def __init__(self):
-        self.scores_escapa = []
-        self.scores_cazador = []
-        self.max_scores = 5
+        self.scores_escapa = [] # list of (nombre, puntuacion)
+        self.scores_cazador = [] # list of (nombre, puntuacion)
+        self.max_scores = 5 # max scores to keep per mode
     
     # add a new score and maintain top scores
     def add_score(self, nombre, puntuacion, modo):
-        score_entry = (nombre, puntuacion)
+        score_entry = (nombre, puntuacion) # new score tuple
         
-        if modo == 'escapa': scores = self.scores_escapa
-        elif modo == 'cazador': scores = self.scores_cazador
-        else: return False
+        if modo == 'escapa': scores = self.scores_escapa # select mode scores
+        elif modo == 'cazador': scores = self.scores_cazador # select mode scores
+        else: return False # invalid mode
         
-        scores.append(score_entry)
+        scores.append(score_entry) # add new score
         
-        self._sort_scores(scores)
+        self._sort_scores(scores) # sort scores descending
         
         if modo == 'escapa':
             self.scores_escapa = scores[:self.max_scores]
@@ -36,11 +36,11 @@ class ScoreManager:
         scores.append((nombre, puntuacion))
         self._sort_scores(scores)
         
-        for i in range(min(len(scores), self.max_scores)):
+        for i in range(min(len(scores), self.max_scores)): # only check top scores
             if scores[i][0] == nombre and scores[i][1] == puntuacion: return i + 1
         return None
     
-    # simple bubble sort for scores in descending order
+    # simple bubble sort for scores in descending order, doing this manually because we want to sort tuples by the second element
     def _sort_scores(self, scores):
         n = len(scores)
         for i in range(n):

@@ -8,26 +8,25 @@ TUNEL  = 3
 
 class GeneradorMapa:
     def __init__(self):
-        
-        self.filas = 15
-        self.columnas = 20
-        self.inicio = (1,1)
-        self.numero_salidas = 2
-        self.conectar_todas_salidas = False
-        self.probabilidad_tunel_en_camino = 0.10
-        self.prob_camino, self.prob_muro, self.prob_liana, self.prob_tunel = (0.45, 0.10, 0.15, 0.10)
-        self.excluir_salidas_esquinas = True
-        self.porcentaje_conversion_camino = 0.30
+        self.filas = 15 # default rows
+        self.columnas = 20 # default columns
+        self.inicio = (1,1) # default start position
+        self.numero_salidas = 2 # default number of exits
+        self.conectar_todas_salidas = False # connect all exits to start
+        self.probabilidad_tunel_en_camino = 0.10 # probability of tunnel when carving path
+        self.prob_camino, self.prob_muro, self.prob_liana, self.prob_tunel = (0.45, 0.10, 0.15, 0.10) # probabilities for random filling
+        self.excluir_salidas_esquinas = True # exclude corners for exits
+        self.porcentaje_conversion_camino = 0.30 # percentage of path conversion
 
         # matriz inicial: todo muro
         self.matriz = [[MURO for _ in range(self.columnas)] for _ in range(self.filas)]
-        self.salidas = []
+        self.salidas = [] # list of exit coordinates
 
     # retorna vecinos en 4 direcciones (arriba, abajo, izquierda, derecha)
     def obtener_vecinos_4_direcciones(self, fila, columna):
-        for delta_fila, delta_columna in ((1,0), (-1,0), (0,1), (0,-1)):
-            nueva_fila, nueva_columna = fila + delta_fila, columna + delta_columna
-            if 0 <= nueva_fila < self.filas and 0 <= nueva_columna < self.columnas: yield nueva_fila, nueva_columna
+        for delta_fila, delta_columna in ((1,0), (-1,0), (0,1), (0,-1)): # down, up, right, left
+            nueva_fila, nueva_columna = fila + delta_fila, columna + delta_columna # new coordinates
+            if 0 <= nueva_fila < self.filas and 0 <= nueva_columna < self.columnas: yield nueva_fila, nueva_columna # yield if within bounds
 
     # obtener todas las coordenadas del borde del mapa
     def obtener_coordenadas_borde(self):
@@ -56,10 +55,13 @@ class GeneradorMapa:
 
     # elegir y abrir salidas en el borde del mapa
     def elegir_salidas(self):
-        borde = self.obtener_coordenadas_borde()
-        random.shuffle(borde)
-        elegidas = borde[:self.numero_salidas] if len(borde) >= self.numero_salidas else borde
+        borde = self.obtener_coordenadas_borde() # get border coordinates
+        random.shuffle(borde) # shuffle for randomness
+
+        elegidas = borde[:self.numero_salidas] if len(borde) >= self.numero_salidas else borde # select exits
+
         self.salidas = elegidas
+
         # abrir las salidas como CAMINO
         for (fila_salida, columna_salida) in self.salidas:
             self.matriz[fila_salida][columna_salida] = CAMINO
@@ -77,47 +79,53 @@ class GeneradorMapa:
         visitados = [[False for _ in range(self.columnas)] for _ in range(self.filas)]
         padres = [[None for _ in range(self.columnas)] for _ in range(self.filas)]
 
-        cola = [origen]
-        indice_lectura = 0
-        fr, fc = origen
-        visitados[fr][fc] = True
-        padres[fr][fc] = None
+        cola = [origen] # queue for BFS
+        indice_lectura = 0 # read index
+        fr, fc = origen #  start coordinates
+        visitados[fr][fc] = True # mark origin as visited
+        padres[fr][fc] = None # origin has no parent
 
+        # BFS loop
         while indice_lectura < len(cola):
-            fila, columna = cola[indice_lectura]
-            indice_lectura += 1
+            fila, columna = cola[indice_lectura] # current cell
+            indice_lectura += 1 # advance read index
 
             if (fila, columna) == destino:
                 # reconstruir camino usando la matriz padres
                 camino = []
                 actual = destino
-                while actual is not None:
+                while actual is not None: # while there is a parent
                     camino.append(actual)
                     ar, ac = actual
                     actual = padres[ar][ac]
                 camino.reverse()
                 return camino
 
+            # explorar vecinos
             for nueva_fila, nueva_columna in self.obtener_vecinos_4_direcciones(fila, columna):
-                if not visitados[nueva_fila][nueva_columna] and self.matriz[nueva_fila][nueva_columna] in tipos_permitidos:
+                if not visitados[nueva_fila][nueva_columna] and self.matriz[nueva_fila][nueva_columna] in tipos_permitidos: # check allowed type
                     visitados[nueva_fila][nueva_columna] = True
                     padres[nueva_fila][nueva_columna] = (fila, columna)
                     cola.append((nueva_fila, nueva_columna))
         return None
 
     # BFS para conectar origen y destino ignorando tipos (usa CAMINO y TUNEL)
+
     def conectar_ignorando_tipos(self, origen, destino):
         # matriz de visitados y padres
         visitados = [[False for _ in range(self.columnas)] for _ in range(self.filas)]
         padres = [[None for _ in range(self.columnas)] for _ in range(self.filas)]
 
-        cola = [origen]
-        indice_lectura = 0
-        fr, fc = origen
-        visitados[fr][fc] = True
-        padres[fr][fc] = None
+    
+        cola = [origen] # queue for BFS
+        indice_lectura = 0 # read index
+        fr, fc = origen # start coordinates
+        visitados[fr][fc] = True # mark origin as visited
+        padres[fr][fc] = None # origin has no parent
 
-        encontrado = False
+        encontrado = False # found flag
+
+        # BFS loop
         while indice_lectura < len(cola):
             fila, columna = cola[indice_lectura]
             indice_lectura += 1
@@ -126,7 +134,9 @@ class GeneradorMapa:
                 encontrado = True
                 break
 
+            # explorar vecinos
             for nueva_fila, nueva_columna in self.obtener_vecinos_4_direcciones(fila, columna):
+                # no importar el tipo, sólo si no visitado
                 if not visitados[nueva_fila][nueva_columna]:
                     visitados[nueva_fila][nueva_columna] = True
                     padres[nueva_fila][nueva_columna] = (fila, columna)
@@ -135,8 +145,9 @@ class GeneradorMapa:
         # reconstruir y tallar el camino sólo si destino fue alcanzado (o es el origen)
         actual = destino
         ar, ac = actual
-        if not encontrado and actual != origen and padres[ar][ac] is None: return  # no hay camino encontrado; no se modifica el mapa
+        if not encontrado and actual != origen and padres[ar][ac] is None: return  # no path found; map not modified
 
+        # tallar el camino con CAMINO
         while actual is not None:
             fila, columna = actual
             self.matriz[fila][columna] = CAMINO
@@ -148,6 +159,7 @@ class GeneradorMapa:
         pila = [origen]
         visitados = [] 
 
+        # DFS para tallar camino
         while pila:
             fila, columna = pila.pop()
             if (fila, columna) in visitados: continue
@@ -182,18 +194,19 @@ class GeneradorMapa:
         if total <= 0: p_muro, p_camino, p_liana, p_tunel = 0.40, 0.15, 0.25, 0.20
         else: p_muro, p_camino, p_liana, p_tunel = (p / total for p in probs)
 
+        # calcular umbrales acumulativos
         umbral_muro = p_muro
         umbral_camino = umbral_muro + p_camino
         umbral_liana = umbral_camino + p_liana
-        # umbral_tunel implícito: resto hasta 1.0
 
         # recolectar vecinos interiores de salidas para protegerlos
         vecinos_salidas = set()
         for sx, sy in self.salidas:
-            for vx, vy in self.obtener_vecinos_4_direcciones(sx, sy):
+            for vx, vy in self.obtener_vecinos_4_direcciones(sx, sy): # check neighbors
                 es_borde_v = (vx in (0, self.filas-1)) or (vy in (0, self.columnas-1))
                 if not es_borde_v: vecinos_salidas.add((vx, vy))
 
+        # rellenar cada celda según probabilidades
         for fila in range(self.filas):
             for columna in range(self.columnas):
                 # el borde siempre es muro, salvo las salidas
@@ -220,22 +233,25 @@ class GeneradorMapa:
         visitados = [[False for _ in range(self.columnas)] for _ in range(self.filas)]
         componentes = []
 
+        # recorrer toda la matriz
         for fila in range(self.filas):
             for columna in range(self.columnas):
-                if not visitados[fila][columna] and self.matriz[fila][columna] in tipos_permitidos:
+                if not visitados[fila][columna] and self.matriz[fila][columna] in tipos_permitidos: # celda no visitada y tipo permitido
                     # BFS para encontrar toda la componente conexa
                     componente = []
                     cola = [(fila, columna)]
                     visitados[fila][columna] = True
                     indice = 0
 
+                    # BFS loop
                     while indice < len(cola):
                         f, c = cola[indice]
                         indice += 1
                         componente.append((f, c))
-
+                        
+                        # explorar vecinos
                         for nf, nc in self.obtener_vecinos_4_direcciones(f, c):
-                            if not visitados[nf][nc] and self.matriz[nf][nc] in tipos_permitidos:
+                            if not visitados[nf][nc] and self.matriz[nf][nc] in tipos_permitidos: # check allowed type
                                 visitados[nf][nc] = True
                                 cola.append((nf, nc))
 
@@ -252,8 +268,9 @@ class GeneradorMapa:
         for comp in componentes:
             if self.inicio in comp:
                 componente_principal = comp
-                break
+                break  # found main component
 
+        # si no se encontró, usar la primera componente
         if componente_principal is None: componente_principal = componentes[0]
 
         for comp in componentes:
@@ -278,9 +295,12 @@ class GeneradorMapa:
 
     # conectar ignorando tipos pero usando solo CAMINO
     def conectar_ignorando_tipos_con_camino(self, origen, destino):
+
+        # matriz de visitados y padres
         visitados = [[False for _ in range(self.columnas)] for _ in range(self.filas)]
         padres = [[None for _ in range(self.columnas)] for _ in range(self.filas)]
 
+        # BFS
         cola = [origen]
         indice_lectura = 0
         fr, fc = origen
@@ -288,6 +308,8 @@ class GeneradorMapa:
         padres[fr][fc] = None
 
         encontrado = False
+
+        # BFS loop
         while indice_lectura < len(cola):
             fila, columna = cola[indice_lectura]
             indice_lectura += 1
@@ -295,7 +317,8 @@ class GeneradorMapa:
             if (fila, columna) == destino:
                 encontrado = True
                 break
-
+            
+            # explorar vecinos
             for nueva_fila, nueva_columna in self.obtener_vecinos_4_direcciones(fila, columna):
                 if not visitados[nueva_fila][nueva_columna]:
                     visitados[nueva_fila][nueva_columna] = True
@@ -451,12 +474,13 @@ class GeneradorMapa:
 
         return self._convertir_a_terrenos(), self.inicio, self.salidas
     
-    #E: None
-    #S: list of list of Terreno objects
+    # convertir la matriz de enteros a objetos de terreno
     def _convertir_a_terrenos(self):
         mapa_terrenos = []
+        # convertir matriz de enteros a objetos de terreno
         for fila_idx in range(self.filas):
             fila_terrenos = []
+            # convertir cada celda a objeto terreno
             for col_idx in range(self.columnas):
                 celda = self.matriz[fila_idx][col_idx]
                 if celda == CAMINO: terreno = Camino(fila_idx, col_idx)
@@ -468,12 +492,4 @@ class GeneradorMapa:
             mapa_terrenos.append(fila_terrenos)
         return mapa_terrenos
 
-# ----------------- Ejemplo de uso -----------------
-if __name__ == "__main__":
-    # Configura a tu gusto:
-    
-    generador = GeneradorMapa()
-    mapa = generador.generar()
-    for fila in mapa:
-        print(fila)
 
